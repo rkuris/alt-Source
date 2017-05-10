@@ -46,8 +46,8 @@ bool getByte(char *buffer, uint8_t *dest, uint8_t LLim, uint8_t HLim);
 bool getDuration(char *buffer, unsigned long *dest,  int HLim);
 bool getFloat(char *buffer, float *dest, float LLim, float HLim);
 bool getBool(char *buffer, bool *dest);
-int frac2int (float frac, int limit);
-void  append_string(char *dest, const char *src, int n);
+int  frac2int (float frac, int limit);
+void append_string(char *dest, const char *src, int n);
 
 
 
@@ -153,9 +153,9 @@ void check_inbound()  {
     union{
         SCS SC;                                                         // Working buffer to hold the read values from the EEPROM
         CPS CP;                                                         // Note how I am using a 'union' to overlap working buffers and save of Stack RAM space...
-          #ifdef SYSTEMCAN  
+#ifdef SYSTEMCAN  
         CCS CC;
-          #endif
+#endif
         } buff;
 
     char     charBuffer[OUTBOUND_BUFF_SIZE+1];                          // Work buffer to assemble strings before sending to the serial port. (for commands that send back responses)
@@ -177,7 +177,9 @@ void check_inbound()  {
         if (ibBuf[3] != ':')    return;                                 // ALL valid commands have a ":" in the 4th position.
 
 
-
+        if (alternatorState == pending_R)           
+            set_ALT_mode(pending_R);                                    // User is trying to bench-conf the regulator, let them do all they need to do before we
+                                                                        // move on and start ramping.
 
         if (ibBuf[0] == 'R') {                                          // They are 'Requesting' something to be sent back to them...
 
@@ -368,8 +370,8 @@ void check_inbound()  {
                                                                                 // $SCA: <32v?>, < Alt Target Temp >, <Alt Derate (norm) >,
                                                                                 //       <Alt Derate (small) >,<Alt Derate (half) >,<PBF>, 
                                                                                 //       <Alt Amp Cap.>, <System Watt Cap. >, <Amp Shunt Ratio>
-
-                        if (!getBool ((ibBuf + 4), &buff.SC.FAVOR_32V                     )) return;
+                        bool dummy;
+                        if (!getBool ((ibBuf + 4), &dummy                                 )) return;  // Was 'Favor32v' has been redacted, ignor it.
                         if (!getByte (NULL, &buff.SC.ALT_TEMP_SETPOINT,            60, 240)) return;                                    
                         if (!getFloat(NULL, &buff.SC.ALT_AMP_DERATE_NORMAL,       0.1, 1.0)) return;
                         if (!getFloat(NULL, &buff.SC.ALT_AMP_DERATE_SMALL_MODE,   0.1, 1.0)) return;
@@ -386,7 +388,7 @@ void check_inbound()  {
                         
 
                 case 'T':                                                             // Changes TACHOMETER parameters in System Configuration table
-                                                                                      // $SCT: <Alt Polls>, < Eng/Alt drive ratio >, <Field Tach Min>
+                                                                                      // $SCT: <Alt poles>, < Eng/Alt drive ratio >, <Field Tach Min>
 
                         if (!getByte((ibBuf + 4), &buff.SC.ALTERNATOR_POLES ,        2,            25)) return;
                         if (!getFloat(NULL,       &buff.SC.ENGINE_ALT_DRIVE_RATIO, 0.5,          20.0)) return;
@@ -802,7 +804,7 @@ void prep_CPE(char *buffer, CPS  *cpsPtr, int index) {
 void prep_SCV(char *buffer) {                                                                               // Prep the System Control Variables.  Pass in working buffer of OUTBOUND_BUFF_SIZE
         snprintf_P(buffer, OUTBOUND_BUFF_SIZE, PSTR("SCV;,%1u,%1u,%1u,%d.%02d,%d.%02d,%1u, ,%d,%d.%02d,%d.%02d,%d.%02d,%d, ,%d,%d, ,%d,%d.%02d,%d, ,%d,%d\r\n"),
                   systemConfig.CONFIG_LOCKOUT,
-                  systemConfig.FAVOR_32V,
+                  systemConfig.FAVOR_32V_redact,
                   systemConfig.REVERSED_SHUNT,
         (int)     systemConfig.SV_OVERRIDE,
         frac2int (systemConfig.SV_OVERRIDE, 100),

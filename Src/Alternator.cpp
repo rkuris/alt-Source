@@ -112,7 +112,7 @@ unsigned long   EORLastReceived;                                        //   And
                                 //---   Default System Config variable is defined here.
     
 SCS systemConfig = {
-        false,                          // .FAVOR_32V                   --> Do NOT favor 32v systems over 24/48v during auto-detection.
+        false,                          // .FAVOR_32V_redact            --> Feature removed, allways FALSE (and now ignored) Do NOT favor 32v systems over 24/48v during auto-detection.
         false,                          // .REVERSED_SHUNT              --> Assume shunt is not reversed.
         200,                            // .ALT_TEMP_SETPOINT           --> Default Alternator temp - 200f
         1.00,                           // .ALT_AMP_DERATE_NORMAL       --> Normal cap Alternator at 100% of demonstrated max Amp capability, 
@@ -124,7 +124,7 @@ SCS systemConfig = {
                                         //                                  Set = 0 to disable Amps capping.  Set = -1 to auto-size Alternator during Ramp. (required Shunt on Alt, not Bat)
         0,                              // .ALT_WATTS_LIMIT             --> The regulator may OPTIONALLY be configured to limit the load placed on the engine via the Alternator.
                                         //                                  Set = 0 to disable, -1 to use auto-calc based on Alternator size. (Required Shunt on Alt, not Bat)
-        12,                             // .ALTERNATOR_POLES            --> # of polls on alternator (Leece Neville 4800/4900 series are 12 pole alts)
+        12,                             // .ALTERNATOR_POLES            --> # of poles on alternator (Leece Neville 4800/4900 series are 12 pole alts)
        ((6.7 / 2.8) * 1.00),            // .ENGINE_ALT_DRIVE_RATIO      --> Engine pulley diameter / alternator diameter &  fine tuning calibration ratio       
  (int) ((500/0.050)  * 1.00),           // .AMP_SHUNT_RATIO             --> Spec of amp shunt,  500A / 50mV shunt (Link10 default) and % calibrating error
                                         //                                   CAUTION:  Do NOT exceed 80mV on the AMP Shunt input
@@ -293,7 +293,7 @@ void calculate_RPMs() {
       workRPMs  = (int) ((60 * 1000000 /(workingTime - priorInterupt_uS) * workingCounter )
                        / ((systemConfig.ALTERNATOR_POLES * systemConfig.ENGINE_ALT_DRIVE_RATIO)/2));
                                                                                                         // Calculate RPMs based on time, adjusting for # of interrupts we have received,
-                                                                                                        // 60 seconds in a minute, number of polls on the alternator,
+                                                                                                        // 60 seconds in a minute, number of poles on the alternator,
                                                                                                         // and the engine/alternator belt drive ratio.
 
       if (workRPMs > 0) {                                                                               // Do we have a valid RPMs measurement?
@@ -1000,8 +1000,11 @@ void manage_ALT()  {
                     ((enteredMills - altModeChanged) >=  PWM_RAMP_RATE*FIELD_PWM_MAX/PWM_CHANGE_CAP)) {
                                                                                                         // Or, have we been ramping long enough?
 
-                        if (systemConfig.ALT_AMPS_LIMIT == -1)  set_ALT_mode(determine_ALT_cap);        //      Yes or Yes!  Time to go into Bulk Phase
-                             else                               set_ALT_mode(bulk_charge);              //      But 1st see if we need to measure the Alternators Capacity...
+                    if (systemConfig.ALT_AMPS_LIMIT == -1) 
+                         set_ALT_mode(determine_ALT_cap);                                               //  Yes or Yes!  Time to go into Bulk Phase
+                    else 
+                         set_ALT_mode(bulk_charge);                                                     //   But 1st see if we need to measure the Alternators Capacity..
+
                 } else {
                     if ((enteredMills - lastPWMChanged) <= PWM_RAMP_RATE)                               // Still under limits, while ramping wait longer between changes..
                         return;
@@ -1045,9 +1048,9 @@ void manage_ALT()  {
 
           case bulk_charge:
                 if (errorV >= 0) {                                                                      // Have we reached terminal voltage during Bulk?
-                   set_ALT_mode(acceptance_charge);                                                     //      Yes, Bulk is easy - got the volts so go into Acceptance Phase!
                    adptExitAcceptDuration   = (enteredMills - altModeChanged) * ADPT_ACPT_TIME_FACTOR;  // Calculate a time-only based acceptance duration based on how long we had been in Bulk mode,
-                                                                                                        //  In case we cannot see Amps.
+                                                                                                        //    (In case we cannot see Amps.)
+                   set_ALT_mode(acceptance_charge);                                                     // Bulk is easy - got the volts so go into Acceptance Phase!
                    }
 
 

@@ -64,6 +64,7 @@
 //
 //
 //
+//      xx/xx/2017  v1.0.3      Removed 'Favor-32v' flag and 32v autoselect, hold in preramp state if we are receiving ASCII config commands.
 //      05/15/2017  v1.0.2      Remember assigned CAN node ID, corrected Amp-shunt cal
 //      01/28/2017  v1.0.1      Revised SST; to place version number at beginning of string.
 //      01/25/2017  v1.0.0      Add support for CAN enabled version of regulator, corrected "$SCO:" command not recognized. Improved auto idle detection and idle field pull-back formula,
@@ -337,25 +338,14 @@ void setup() {
                                         
    delay (100);                                                                         // It should have only take 17mS for the INA226 to complete a sample, but let's add a bit of padding..                                   
    read_ALT_VoltAmps();                                                                 // Sample the voltage the alternator is connected to 
-                                
+     
    if       (measuredAltVolts < 17.0)   systemVoltMult = 1;                             //  Likely 12v 'system'
-   else  if (measuredAltVolts < 34.0)   systemVoltMult = 2;                             //  Likely 24v 'system'
-   else  if (measuredAltVolts < 40.0)   systemVoltMult = 2.667;                         //  Likely 32v 'system'
-   else                                 systemVoltMult = 4;                             //  Must be 48v 'system'
-
-   if ((systemConfig.FAVOR_32V == true)  && 
-       (measuredAltVolts > 27.0) && (measuredAltVolts < 45.0))                          //  As there is overlap between 32v and 24v / 48v batteries.  This flag will favor the election of a 32v system if there is ambiguity
-                  systemVoltMult = 2.667;                                               // 27v recognizes rather low charged 32v batteries, but also is very close to the resting state of 24v systems - so need to be careful. 
-                                                                                        // 45v will accommodate a 32v system being 'equalized', and in reality no 48v system should really be that low unless there is a very heavy charge on it.
+   else  if (measuredAltVolts >= 40.0)  systemVoltMult = 4;                             //  Must be 48v 'system'
+   else                                 systemVoltMult = 2;                             //  Anything in-between we will treat as a 24v 'system' 
+                                                                                        //    Note that beginning with v1.0.3, '32v' auto-select has been removed, too risky - user should fix voltMult using $SCO: command
 
 
 
-                  
-                  
- 
-
-                                                                                        
-      
 
                                         //------ Now that we have done all the above work, let's see if the user has chosen to override any of the features!
 
@@ -973,7 +963,6 @@ void blink_LED (unsigned pattern, unsigned led_time, int8_t led_repeat,  bool mi
 
         LEDBitMask = 0;                                                 // We will start with the MSB in the pattern
         LEDUpdated = millis();
-        LEDFOMirror  = mirror;
         
 }
 

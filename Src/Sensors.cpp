@@ -646,8 +646,7 @@ bool read_ALT_VoltAmps(void) {
 void resolve_BAT_VoltAmpTemp(void) {
 
     unsigned long enteredMills;                                                                // Time in millis() resolve_BAT_VoltAmpTemp() was entered with.  
-    enteredMills = millis();                                                                   // Used throughout function and we need to have a consistent value between calculations
-    
+    enteredMills = millis();                                                                   // Used throughout function and we need to have a consistent value between calculations.
     
     measuredBatVolts  = measuredAltVolts;                                                       // Start by assuming we have not received any external communications.
                         
@@ -853,7 +852,7 @@ return (0);
 
      savedShuntRawADC = i;                                                                   // Tuck this raw value away in case we are doing a auto-calibration procedure (See cal_ADCs())
      measuredAltAmps  = (i - ADCCal.AmpOffset)  * 0.0000025 * AALT_SCALER * (float)systemConfig.AMP_SHUNT_RATIO;  
-                                                                                            // Each bit = 2.5uV Shunt Voltage.  Adjust by Shunt ratio and internal dividers 
+                                                                                             // Each bit = 2.5uV Shunt Voltage.  Adjust by Shunt ratio and internal dividers 
      updatingVAs = false;                                                                   //   All done, ready to do another synchronized sample session.
      }
 

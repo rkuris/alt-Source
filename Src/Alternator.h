@@ -49,7 +49,7 @@ typedef enum  {unknown, disabled, FAULTED, FAULTED_REDUCED_LOAD,                
 
 typedef struct  {                                               // System Configuration Structure
 
-   bool         FAVOR_32V;                                      // It is impossible to auto-define a 32v system from a 24v system just from the battery voltage, as their
+   bool         FAVOR_32V_redact;                               // It is impossible to auto-define a 32v system from a 24v system just from the battery voltage, as their
                                                                 // expected ranges overlap. (there is also a small overlap with 48v batteries).
                                                                 // This flag will FORCE clarification by favoring a 32v system over a 24v (and 48v) when there is Ambiguity.  See startup()
 
@@ -95,7 +95,7 @@ typedef struct  {                                               // System Config
                                                                 // ------ Parameters used to calibrate RPMs as measured from Alternator Stator Pulses
                                                                 //        IF you wish to read 'engine RPMs' from the regulator, you will need to adjust these.  But w/o any adjustment the 
                                                                 //        regulator will function correctly, for its purpose.
-   uint8_t      ALTERNATOR_POLES;                               // # of polls on alternator 
+   uint8_t      ALTERNATOR_POLES;                               // # of poles on alternator 
    float        ENGINE_ALT_DRIVE_RATIO;                         // engine pulley diameter / alternator diameter
 
 
