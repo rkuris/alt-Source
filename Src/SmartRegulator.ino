@@ -111,7 +111,7 @@
 
                                                
                                                 
-#include "Device_Unique.h"
+#include "Config.h"
 #include "Flash.h"
 #include "CPE.h"
 #include "AltReg_Serial.h"
@@ -1481,7 +1481,7 @@ void loop()  {
 
         if (read_sensors()== false) return;                                                             // If there was an error in reading a critical sensor we have FAULTED, restart the loop.
                                                                                                         // Treat volts and amps sensed directly by the regulator as the ALTERNATOR values. .
-        resolve_BAT_VoltAmpTemp();                                                                         // . .   but then look to see if they should also be considered the BATTERY values.
+        resolve_BAT_VoltAmpTemp();                                                                      // . .   but then look to see if they should also be considered the BATTERY values.
                                                                                                         //       (Will be yes, unless we receive battery volts / amps externally via an ASCII command or the CAN)
         calculate_RPMs();                                                                               // What speed is the engine spinning?
         calculate_ALT_targets();                                                                        // With all that known, update the target charging Volts, Amps, Watts, RPMs...  global variables.

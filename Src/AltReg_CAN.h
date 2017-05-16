@@ -32,7 +32,7 @@
                                                             //  you may disable them.  (or place the Regulator on an dedicated CAN network and use a bridge)
 
 
-#include "Device_Unique.h"
+#include "Config.h"
 
 #ifdef SYSTEMCAN                                            // To allow common source code for old and new designs; nothing happens if we are not compiling for the new CAN board.    
 #include <Arduino.h>

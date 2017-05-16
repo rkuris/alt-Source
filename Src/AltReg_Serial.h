@@ -25,7 +25,7 @@
 #define _ALTREG_SERIAL_H_
 
 #include <Arduino.h>
-#include "Device_Unique.h"
+#include "Config.h"
 #include "CPE.h"    
 
 

@@ -25,7 +25,7 @@
 #define _FLASH_H_
 
 #include <Arduino.h>
-#include "Device_Unique.h"                                               // Pick up the specific structures and their sizes for this program.
+#include "Config.h"                                               // Pick up the specific structures and their sizes for this program.
 #include "Sensors.h"
 #include "CPE.h"   
 #include "Alternator.h"

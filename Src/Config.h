@@ -1,5 +1,5 @@
 //
-//      Device_Unique.h
+//      Config.h
 //
 //      Copyright (c) 2016, 2017 by William A. Thomason.      http://arduinoalternatorregulator.blogspot.com/
 //
@@ -21,11 +21,10 @@
 //
 
 
-#ifndef _DeviceUnique_H_
-#define _DeviceUnique_H_
+#ifndef _Config_H_
+#define _Config_H_
 
 #include <Arduino.h>            // Pick up Arduino specifics, ala PROGMEM
-#include "CPE.h"
 
 
                                                        
@@ -449,7 +448,6 @@ typedef uint32_t prog_uint32_t;
 
 
 #define ENGINE_WARMUP_DURATION          30000UL                 // Allow engine 30 seconds to start and 'warm up' before placing a load on it.  
-#define BAT_TEMP_NOMINAL                77                      // Nominal temp for above bat voltages (in deg-F).                              
 
 
                                 // ------ Parameters used to calibrate RPMs as measured from Alternator Stator Pulses
@@ -707,7 +705,7 @@ extern unsigned        faultCode;
 extern char const firmwareVersion[];
 
 
-#endif  // _DeviceUnique_H_
+#endif  // _Config_H_
 
 
 

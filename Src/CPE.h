@@ -102,6 +102,7 @@ typedef struct {                                                // Charging Prof
    } CPS;
 
 
+#define BAT_TEMP_NOMINAL                77                      // Nominal temp which .BAT_TEMP_1F_COMP is based around (in deg-F). 
 
 
 extern const CPS  defaultCPS[MAX_CPES] PROGMEM;

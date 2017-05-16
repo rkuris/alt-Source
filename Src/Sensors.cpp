@@ -19,7 +19,7 @@
 //
 //
 
-#include "Device_Unique.h"
+#include "Config.h"
 #include "Sensors.h"
 #include "Alternator.h"
 #include "AltReg_CAN.h"

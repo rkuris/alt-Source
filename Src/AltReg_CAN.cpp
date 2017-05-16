@@ -21,7 +21,7 @@
 //
 
 
-#include "Device_Unique.h"
+#include "Config.h"
 #ifdef SYSTEMCAN                                            // To allow for old and new targets, nothing else happens if we are not compiling for the new CAN board.
 
 #include "AltReg_CAN.h"

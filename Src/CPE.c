@@ -52,7 +52,7 @@ const CPS PROGMEM defaultCPS[MAX_CPES] = {
         {14.1, 6.0*3600000UL,  5,        0,  0.0,   0*3600000UL,        13.5,  -1, 0*3600000UL, -10,  0, 12.8,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.028*6/10, 15, -50, 125},  // #5 GEL
         {14.0, 1.0*3600000UL, 15,        0,  0.0,   0*3600000UL,        13.1,  -1, 0*3600000UL,   0,  0,  0.0,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.000*6/10, 15, -50, 125},  // #6 RESERVED (place saver of very safe values)
         {14.4, 6.0*3600000UL, 15,       15, 15.3, 3.0*3600000UL,        13.1,  -1, 0*3600000UL, -10,  0, 12.8,    0*3600000UL, 0.0, 0,    15.3,  0, 3.0*60000UL, 0,     0.028*6/10, 15, -50, 125},  // #7 4-stage HD LFA (+ Custom #1 changeable profile)  
-        {14.0, 1.0*3600000UL, 50,        0,  0.0,   0*3600000UL,        13.36,  0, 0*3600000UL,   0, 50, 13.3,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.000*6/10, 15,  32, 113}   // #8 LiFeP04        (+ Custom #2 changeable profile)
+        {13.9, 1.0*3600000UL, 15,        0,  0.0,   0*3600000UL,        13.36,  0, 0*3600000UL,   0, 50, 13.3,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.000*6/10, 15,  32, 113}   // #8 LiFeP04        (+ Custom #2 changeable profile)
         };
 
                                                                 // Side note:  The Arduino programming environment will place the above populated table into EPROM during compile time.

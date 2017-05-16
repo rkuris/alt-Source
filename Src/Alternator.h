@@ -24,7 +24,7 @@
 #define _ALTERNATOR_H_
 
 #include <Arduino.h>
-#include "Device_Unique.h"
+#include "Config.h"
 
 
 typedef enum  {unknown, disabled, FAULTED, FAULTED_REDUCED_LOAD,                                                                   // Used by most or all  (0..3)

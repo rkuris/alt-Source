@@ -20,7 +20,7 @@
 //
 
 
-#include "Device_Unique.h"
+#include "Config.h"
 #include "Alternator.h"
 #include "AltReg_Serial.h"
 #include "Sensors.h"
@@ -98,7 +98,7 @@ float           targetAltAmps   = 0;
 
 //---   States and Modes -  defines or modifies various functions behaviors
 tModes          alternatorState   = unknown;                            // What is the current state of the alternator regulators?  (Ramping, bulk, float, faulted, etc...)
-bool            smallAltMode = false;                                   // Has the user indicated (vita the DIP Switch) they want us to run in the Small Alternator mode?  If so, we will assume the
+bool            smallAltMode      = false;                              // Has the user indicated (vita the DIP Switch) they want us to run in the Small Alternator mode?  If so, we will assume the
                                                                         //   alternator has limited heat dispersion capability and will as such reduce its output to a max of ALT_AMP_DERATE_SMALL_MODE
                                                                         //   of its capability (as auto-measured, or defined by the user).
 bool            usingEXTAmps      = false;                              // This flag is used to note that we received Battery Amps for the $EBA: ASCII command or a remote CAN master to
