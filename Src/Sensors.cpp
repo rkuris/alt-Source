@@ -964,12 +964,12 @@ void read_NTCs(void) {
 }
 
 
-int normalizeNTCAverage(unsigned long accumalatedSample, int beta, bool hasRG)    {     // Helper function, will convert the passed oversampled ADC value into a temperature
-    float         vNTC;
+int normalizeNTCAverage(unsigned long accumulatedSample, int beta, bool hasRG)    {     // Helper function, will convert the passed oversampled ADC value into a temperature
     float          resistanceNTC;
 
-    resistanceNTC =  accumalatedSample / (accumulatedNTCSamples/3);                     // Calculate NTC resistance
-    resistanceNTC = (1023 / resistanceNTC) -1;
+
+    resistanceNTC = (accumulatedSample / (accumulatedNTCSamples/3));                    // Calculate NTC resistance
+    resistanceNTC = (1023.0 / resistanceNTC) - 1.0;
     resistanceNTC = (float)NTC_RF / resistanceNTC;
 
     if (hasRG)  resistanceNTC -= (float)NTC_RG;                                         // Adjust for the Ground Isolation Resistor, if this sensor has one.

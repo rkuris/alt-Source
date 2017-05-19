@@ -40,7 +40,7 @@
 #define MAX_CPES        8                                       //  There are 8 different Charge profile Entries
 #define CUSTOM_CPES     2                                       //  The last two of which are set aside as 'customizable' and are changeable via the ASCII string commands.
 
-typedef struct {                                                // Charging Profile Structure                   
+typedef struct CPS {                                            // Charging Profile Structure                   
 
    float          ACPT_BAT_V_SETPOINT;                          // Set point for Ramp, Bulk and Acceptance battery voltage.  
                                                                 // Alternator will transition from BULK mode into Accept Mode when this voltage is reached, and then start the Accept Duration counter.

@@ -43,7 +43,7 @@
     
     
 
-typedef struct {                                                // CAN Configuration Structure
+typedef struct CCS {                                            // CAN Configuration Structure
         uint8_t     BI_OVERRIDE;                                // RV_C 'Battery' number of the DC system - override for DIP switch (0 = use DIP switch value)
         uint8_t     DEVICE_INSTANCE;                            // RV_C 'Charger' instance
         uint8_t     DEVICE_PRIORITY;                            // RV_C 'device ranking' relative to other DC sources.  Used to arbitrate who will be MASTER of mesh.

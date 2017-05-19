@@ -469,12 +469,12 @@ void N2kDCBatStatus_message(void){
                     */
 void RVCDCStatus1_message(void){
     tN2kMsg   N2kMsg;
-    int32_t  Adc;
+    uint32_t  Adc;
 
       if (canConfig.ENABLE_OSE == false)  return;                                         // User has disabled RV-C messages, perhaps due to conflict in the system.
 
       if ((shuntAmpsMeasured == false) || (canConfig.SHUNT_AT_BAT == false))              // Even if we ARE actively charging, but
-          Adc = N2kInt32NA;                                                               //   .. have no idea what the battery current is
+          Adc = N2kUInt32NA;                                                              //   .. have no idea what the battery current is
       else
           Adc = (int32_t)(measuredBatAmps  * 1000.0) + 0x77359400;                        // The Shunt is working!
                                                                                           // Side note:  Need to force Amps = 0 if we are not in a charging state, to allow the self-prioritization
@@ -1232,7 +1232,7 @@ void RVCDCStatus1_handler(const tN2kMsg &N2kMsg){                               
     if (ParseRVCDCSourceStatus1(N2kMsg, instance, devPri, Vdc, Adc)) {                      // Received a valid CAN message from someone
                 
         if ((validate_CAN(instance, devPri, N2kMsg.Source, FLAG_DC1)) &&                    // Is it from someone we should be listing to?
-            (Adc != N2kInt32NA)) {                                                          // And do they actually have a current value to tell us?
+            (Adc != N2kUInt32NA)) {                                                         // And do they actually have a current value to tell us?
               
              CAN_RBM_amps = (float)((int32_t)Adc - 0x77359400) * 0.001;                     // Yup - save this info, will be processed in resolve_BAT_VoltAmpTemp();
              CAN_RBM_ampsRefreshed = millis();

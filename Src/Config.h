@@ -546,7 +546,7 @@ typedef uint32_t prog_uint32_t;
                                                         // Alternator State modes - to allow for short term bumps and dips.
 #define AMPS_PERSISTENCE_FACTOR         2048            // Amps will be averaged over this number of samples at "PWM_CHANGE_RATE". (2048 = ~3.5 mins look-back)
                                                         // Set = 1L to disable  (Used to exit Acceptance and Float modes)
-#define VOLTS_PERSISTENCE_FACTOR        300             // Amps will be averaged over this number of samples at "PWM_CHANGE_RATE". (300 = ~1/2 min look-back)
+#define VOLTS_PERSISTENCE_FACTOR        300             // Volts will be averaged over this number of samples at "PWM_CHANGE_RATE". (300 = ~1/2 min look-back)
                                                         // Set = 1 to disable  (Used to exit post_float mode)
 
                                                         // Desensitizing parameters for deciding when to initiate a new Alternator Capacity Measurement cycle, 

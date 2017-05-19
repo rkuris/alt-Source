@@ -1365,7 +1365,6 @@ void manage_ALT()  {
 
                    );
 
-
         Serial.write(charBuffer);
         SDMCounter  = SDM_SENSITIVITY;
         }

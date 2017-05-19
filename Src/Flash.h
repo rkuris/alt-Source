@@ -83,7 +83,7 @@ void commit_EEPROM(void);
 
 
                                                             
-typedef struct {                                                // EEPROM Key Structure - used to validate storage of CPS and SCV structures in the EEPROM
+typedef struct EKEY {                                           // EEPROM Key Structure - used to validate storage of CPS and SCV structures in the EEPROM
 
    unsigned     SCS_ID1;                                        // Unique bit pattern that must match to indicate an systemConfig structure has been placed
    unsigned     SCS_ID2;                                        // into the EEPROM at one time.

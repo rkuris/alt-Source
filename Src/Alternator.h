@@ -27,8 +27,8 @@
 #include "Config.h"
 
 
-typedef enum  {unknown, disabled, FAULTED, FAULTED_REDUCED_LOAD,                                                                   // Used by most or all  (0..3)
-               pending_R, ramping, determine_ALT_cap, bulk_charge, acceptance_charge, overcharge_charge, float_charge, forced_float_charge, post_float, equalize, RBM_CVCC} tModes; 
+typedef enum  tModes {unknown, disabled, FAULTED, FAULTED_REDUCED_LOAD,                                                          // Used by most or all  (0..3)
+                     pending_R, ramping, determine_ALT_cap, bulk_charge, acceptance_charge, overcharge_charge, float_charge, forced_float_charge, post_float, equalize, RBM_CVCC} tModes; 
                                                                                                                                 // Alternator specific (4..14)
                                                                                                                                 // Take care not to change the order of these, some tests use
                                                                                                                                 // things like <= pending_R

@@ -23,7 +23,7 @@
 #ifndef _SENSORS_H_
 #define _SENSORS_H_
 
-typedef struct {                                            // Calibration Structure - holds board specific values, set at time of manufacturing.
+typedef struct CAL {                                        // Calibration Structure - holds board specific values, set at time of manufacturing.
       bool          Locked;                                 // Calibration already done at Factory, and hence should NEVER be overridden (even master reset)
       float         VBatGainError;                          // Error of VBat ADC + resister dividers 
       float         AmpGainError;
