@@ -476,7 +476,7 @@ void RVCDCStatus1_message(void){
       if ((shuntAmpsMeasured == false) || (canConfig.SHUNT_AT_BAT == false))              // Even if we ARE actively charging, but
           Adc = N2kUInt32NA;                                                              //   .. have no idea what the battery current is
       else
-          Adc = (int32_t)(measuredBatAmps  * 1000.0) + 0x77359400;                        // The Shunt is working!
+          Adc = (uint32_t)(measuredBatAmps  * 1000.0) + 0x77359400;                       // The Shunt is working!
                                                                                           // Side note:  Need to force Amps = 0 if we are not in a charging state, to allow the self-prioritization
                                                                                           // schema to resolve who is the lowest priority CHARGING source.
       SetRVCDCSourceStatus1(N2kMsg, batteryInstance, canConfig.DEVICE_PRIORITY,
