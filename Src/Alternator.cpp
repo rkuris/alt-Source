@@ -1,4 +1,4 @@
-//      Alternator.C
+//      Alternator.cpp
 //
 //      Copyright (c) 2016, 2017 by William A. Thomason.      http://arduinoalternatorregulator.blogspot.com/
 //
@@ -24,6 +24,7 @@
 #include "Alternator.h"
 #include "AltReg_Serial.h"
 #include "Sensors.h"
+
 
 
 
@@ -456,7 +457,7 @@ int     i;
 
 
 
-        //---   2nd check:  Is there a higher priority charging soruce which is under-utilized?
+        //---   2nd check:  Is there a higher priority charging source which is under-utilized?
         if  ((millis() - CAN_HPUUCS_lastReceived) <= REMOTE_CAN_HPUUCS_TIMEOUT) {                       // Did the CAN code recently notice someone being under-utilized?
                 fieldPWMLimit = min(fieldPWMLimit, (fieldPWMvalue - PWM_CHANGE_CAP));                   // Yes, Start capping the PWM Field Drive a little below where manage_alt() currently has it.
                                                                                                         // Once manage_alt() has actually lowered the PWM value, we can check again to see if the system still
@@ -473,7 +474,8 @@ int     i;
                                                                                                         // Is there someone of equal priority, who we should be sharing things will?
             int perUtil = ALT_Per_Util();                                                               // Looks like it.  Take note what OUR utilization is.. 
             if (perUtil > (average_EPC_utilization * 1.2))                                              // Are we producing more then the average output of our peers by a bunch?
-                fieldPWMLimit = min(fieldPWMLimit, fieldPWMvalue) * ((perUtil - average_EPC_utilization) / perUtil);
+//!! HEY!!!  WILL THIS HELP WITH DUAL ALTS???                fieldPWMLimit = min(fieldPWMLimit, fieldPWMvalue) * ((perUtil - average_EPC_utilization) / perUtil);
+                fieldPWMLimit = min(fieldPWMLimit, (fieldPWMvalue - 1));
                                                                                                         // Yes, pull back some.
         } else
             average_EPC_utilization = 0;                                                                // No one is talking to us anymore. (Been too long)  Reset the average value...

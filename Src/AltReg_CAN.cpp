@@ -95,10 +95,11 @@ int     CANCharBuffIndex = 0;                                           //   Thi
  uint8_t       CAN_RBM_devicePriority;                                  // How 'smart' is the master we are linked with? (0 = not very, need to look for someone smarter)
  unsigned char SID;                                                     // SID to 'align' different NMEA messages.  Incremented each time N2kDCStatus_message() is sent out.
 
-                                                                        // Two bit flag table to coordinate 'Charger Status' and 'Charger Status2' PGNs. 
-uint8_t        chargerSBHP[32];                                         // Bit = 1 --> CAN address is on same DC_SOURCE as us, and Higher priority.
-uint8_t        chargerSBEP[32];                                         // Bit = 1 --> CAN address is on same DC_SOURCE as us, and Equal priority.
-uint8_t        chargerSBLP[32];                                         // Bit = 1 --> CAN address is on same DC_SOURCE as us, and Lower priority.
+#define SBSZ  32                                                                                                                // 32 byte 'bit' arrays 
+                                                                        // Two bit flag table to coordinate 'Charger Status' and 'Charger Status2' PGNs.
+uint8_t        chargerSBHP[SBSZ];                                       // Bit = 1 --> CAN address is on same DC_SOURCE as us, and Higher priority.
+uint8_t        chargerSBEP[SBSZ];                                       // Bit = 1 --> CAN address is on same DC_SOURCE as us, and Equal priority.
+uint8_t        chargerSBLP[SBSZ];                                       // Bit = 1 --> CAN address is on same DC_SOURCE as us, and Lower priority.
                                                                         // Caution:  Make these three tables the SAME SIZE - see: reset_BIT_arrarys()
                                                                         // (I HATE needing to use these table, but - RV-C spec has some holes where it does not provide clear linkage....)
                                                                         // (NMEA-2000 is much worst, and I am not going to try and fill them --  see forced_CAN_ID for one of the workarouds...)
@@ -263,7 +264,7 @@ bool initialize_CAN(void) {
 void reset_BIT_arrarys(void) {
     int i;
     
-    for (i = 0; i++; i < sizeof(chargerSBEP)) {
+    for (i = 0; i++; i < SBSZ) {
         chargerSBHP[i] = 0x00;
         chargerSBEP[i] = 0x00;
         chargerSBLP[i] = 0x00;
@@ -1010,22 +1011,19 @@ void ISODiagnostics_message(void){
                                                                 // Standard ones & our own custom ones.
     
     SetISODiagnosticsMessage(N2kMsg,onStatus,activeStatus,errorRed,errorYellow,
-                                0,                              // unknown DSA    (Make this smarter later on??)
+                                0,                              // unknown DSA    (Make this smarter later on?)
                                 SPN,                            
                                 ISOfmi_DVfni,                   // Preferred FMI when SPN is a proprietary one. 
                                 0x7F,                           // Count unavailable
                                 0xFF,                           // No extended DSA
                                 0x0F);                          // No Banks defined
-
-    inline void SetISODiagnosticsMessage(tN2kMsg &N2kMsg, bool On, bool Active, bool Red, bool Yellow, uint8_t DSA, 
-                          uint32_t SPN, tISOFMIType FMI, uint8_t Count, uint8_t DSA_ext, uint8_t Bank); 
                           
     NMEA2000.SendMsg(N2kMsg);
 }
 
 
 void ISODiagnosticsER_message(void) {
-    if (alternatorState == FAULTED)
+    if ((alternatorState == FAULTED)  || (alternatorState == FAULTED_REDUCED_LOAD))
       ISODiagnostics_message();
 }
 
@@ -1067,11 +1065,15 @@ void check_CAN(void){
 
 
 
+
+
+
 //------------------------------------------------------------------------------------------------------
 // Handle CAN Messages
 //
-//      This is a call-back function registered into NMEA2000.ParseMessages();   It is called when a new CAN message has been received.
-//      This function will parse the CAN message to decide if it is something we care about, and if so will take the appropriate action.
+//      These are the call-back functions registered into NMEA2000.ParseMessages();   They are called when a new CAN message has been received
+//      or an external request has been made of us for a message. These functons function will parse the CAN message to decide if it is something
+//      we care about and/or are able to respond to (All directed from the CANHandlers[] table), and if so will take the appropriate action.
 //
 //
 //------------------------------------------------------------------------------------------------------
@@ -1329,7 +1331,7 @@ void RVCDCStatus5_handler(const tN2kMsg &N2kMsg){                               
 
     if (canConfig.ENABLE_OSE == false)  return;                                             // User has disabled RV-C messages, perhaps due to conflict in the system.  So we are not sure this is REALLY an RV-C message
     
-    if (ParseRVCDCSourceStatus5(N2kMsg, instance, devPri,  Vdc,  dVdT)&&                    // Received a valid CAN message from someone
+    if (ParseRVCDCSourceStatus5(N2kMsg, instance, devPri,  Vdc,  dVdT) &&                   // Received a valid CAN message from someone
         validate_CAN(instance, devPri, N2kMsg.Source, FLAG_DC5)) {                          // Is it from someone we should be listing to?
 
         CAN_RBM_volts = (float)Vdc * 0.001;                                                 // Yup - save this info, will be processed in resolve_BAT_VoltAmpTemp();
@@ -1508,7 +1510,7 @@ void RVCDCDisconnectCommand_handler(const tN2kMsg &N2kMsg){                     
 
 
        if ((instance == batteryInstance) &&                                                 // Are they talking about OUR battery????
-           (disCmd)) {                                                                      // DYes, and a Disconnect command has been issued for our battery!
+           (disCmd)) {                                                                      // Yes, and a Disconnect command has been issued for our battery!
             set_ALT_PWM(0);                                                                 // Shut down the PWM ASAP.
 
             alternatorState = FAULTED;

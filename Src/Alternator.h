@@ -25,6 +25,7 @@
 
 #include <Arduino.h>
 #include "Config.h"
+#include "CPE.h" 
 
 
 typedef enum  tModes {unknown, disabled, FAULTED, FAULTED_REDUCED_LOAD,                                                          // Used by most or all  (0..3)

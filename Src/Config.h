@@ -43,7 +43,7 @@
 
 
 
-#define  REG_FIRMWARE_VERSION  "AREG1.0.2"                      // Sent out with SST; status string as well as the CAN product ID 
+#define  REG_FIRMWARE_VERSION  "AREG1.0.3"                      // Sent out with SST; status string as well as the CAN product ID 
                                                                 // Use format of xxxxyyyyyy  where xxxx= 4 chars of device type, and yyy= varying chars of version number.
 
 

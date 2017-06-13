@@ -107,7 +107,6 @@ uint8_t fetch_CAN_localID(void);
  
     
 extern CCS              canConfig;
-extern const tProductInformation BatteryMonitorProductInformation PROGMEM;
 extern float            CAN_RBM_amps;      
 extern unsigned long    CAN_RBM_ampsRefreshed;
 extern float            CAN_RBM_volts;

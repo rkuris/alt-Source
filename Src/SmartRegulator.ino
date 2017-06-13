@@ -117,6 +117,7 @@
 #include "AltReg_Serial.h"
 #include "Alternator.h"
 #include "Sensors.h"
+#include "AltReg_CAN.h"
 
 
 
@@ -197,12 +198,12 @@ void setup() {
 
   Serial.begin(SYSTEM_BAUD);                                                            // Start the serial port.
 
-
-   #ifdef DEBUG 
+    #ifdef DEBUG
         sendDebugString = true;                                                         // Send out debug string if in debug mode :-)
         Serial.print("Size of EEPROM being used (out of 2048 bytes) = ");
-        Serial.println((sizeof(EKEY)  + sizeof(SCS)  + sizeof(CPS)*MAX_CPES));
+        Serial.println(sizeof(CCS)  + CCS_FLASH_LOCAITON);
         #endif
+        
 
    #ifdef SIMULATION
         randomSeed(analogRead(0));                                                      // Prime the random number generator (used during VBat simulation)
@@ -822,6 +823,8 @@ void reboot() {
         analogWrite(CHARGE_PUMP_PORT,0);                                        // and the Charge Pump as well.
         #endif
 
+     commit_EEPROM();                                                           // Make sure any clean-up in the EEPROM is done (Specificly for those which use EEPROM emulation via flash)
+     
      wdt_enable(WDT_PER);                                                       // JUST IN CASE:  Make sure the Watchdog is enabled! 
                                                                                 //  (And in any case, let it be the shorter reboot watchdog timeout.
 
@@ -1513,7 +1516,7 @@ void loop()  {
   //
         handle_feature_in();
         check_inbound();                                                                                // See if any communication is coming in via the Bluetooth (or DEBUG terminal), or Feature-in port.
- 
+
         update_run_summary();                                                                           // Update the Run Summary variables
         send_outbound();                                                                                // And send the status via Bluetooth
         update_LED();                                                                                   // Set the blinking pattern and refresh it. (Will also blink the FEATURE_OUT if so configured via #defines
