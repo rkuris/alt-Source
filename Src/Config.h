@@ -43,7 +43,7 @@
 
 
 
-#define  REG_FIRMWARE_VERSION  "AREG1.0.3"                      // Sent out with SST; status string as well as the CAN product ID 
+#define  REG_FIRMWARE_VERSION  "AREG1.1.0"                      // Sent out with SST; status string as well as the CAN product ID 
                                                                 // Use format of xxxxyyyyyy  where xxxx= 4 chars of device type, and yyy= varying chars of version number.
 
 
@@ -435,9 +435,9 @@ typedef uint32_t prog_uint32_t;
 #define FAULT_BAT_VOLTS_CHARGE          16.5                    // This is where we will fault.  Make sure you have sufficient headroom for Over Charge voltage (if being used)
 #define FAULT_BAT_VOLTS_EQUALIZE        18.0                    // When doing Equalization, allow a higher limit.
 #define FAULT_BAT_VOLTS_LOW              8.0                    // Anything below this means battery is damaged, or sensing wire is missing / failing.
-#define FAULT_BAT_TEMP                   140                    //  At or above this, fault out. in degrees-F
+#define FAULT_BAT_TEMP                    60                    //  At or above this, fault out. (Approx 140F)
 #define FAULT_ALT_TEMP                   1.1                    //  Fault if Alt Temp exceeds desired set point by 10%   
-#define FAULT_FET_TEMP                   200                    // If Field driver FETs are over 200f, something is wrong with the FETs - fault.
+#define FAULT_FET_TEMP                    70                    // If Field driver FETs are over 80c (Approx 160f), something is wrong with the FETs - fault.
 
 #define ADPT_ACPT_TIME_FACTOR              5                    // If the regulators is operating in Adaptive Acceptance Duration mode (either because EXIT_ACPT_AMPS was set = -1, or
                                                                 // if we are unable to measure any amps), the amount of time we spend in Bulk phase will be multiplied by this factor, and
@@ -499,19 +499,19 @@ typedef uint32_t prog_uint32_t;
 #define KdPWM_W                      0.02
 
 
-#define KpPWM_TA                     0.500              // Adjust PWM 1 step for each 2 degree error in Alt temp.   
-#define KdPWM_TA                     0.750
+#define KpPWM_TA                     0.900              // Adjust PWM 1 step for each degree error in Alt temp.   
+#define KdPWM_TA                     1.350
 
 #define PID_I_WINDUP_CAP             0.9                // Capping value for the 'I' factor in the PID engines.  I is not allowed to influence the PWM any more then this limit 
                                                         // to prevent 'integrator Runaway' 
 
+#define PID_VOLTAGE_SENS            0.040               // When looking at mode transitions, if we come within 40mV of the target voltage (for rep 12v battery), consider we have 'met' that voltage condtion.
 
 
                                                           
                                 //---- Load Dump / Raw Overvoltage detection thresholds and actions.
                                 //     (These action occur asynchronous to the PID engine -- handled in real time linked to the ADCs sampling rate.)
-  
-                                                       
+                                                     
 #define LD1_THRESHOLD              0.040                // During a Load Dump situation, VBat can start to rise VERY QUICKLY.   Too quick for the PID engine
 #define LD2_THRESHOLD              0.080                // in the case of large (200A+) alternators.  If measured voltage exceeds target voltage by these thresholds 
 #define LD3_THRESHOLD              0.100                // the PWM is pulled back.   Once these brute force changes are made, the normal PID engine can start 
@@ -544,7 +544,7 @@ typedef uint32_t prog_uint32_t;
                                                         // When deciding to change Alternator charge states, and adjust the throttle, we use persistent Watts and Amps.
                                                         // These are averaged values over X periods.  These are used to smooth changes in 
                                                         // Alternator State modes - to allow for short term bumps and dips.
-#define AMPS_PERSISTENCE_FACTOR         2048            // Amps will be averaged over this number of samples at "PWM_CHANGE_RATE". (2048 = ~3.5 mins look-back)
+#define AMPS_PERSISTENCE_FACTOR          512            // Amps will be averaged over this number of samples at "PWM_CHANGE_RATE". (512 = a bit less then 1 minute look-back)
                                                         // Set = 1L to disable  (Used to exit Acceptance and Float modes)
 #define VOLTS_PERSISTENCE_FACTOR        300             // Volts will be averaged over this number of samples at "PWM_CHANGE_RATE". (300 = ~1/2 min look-back)
                                                         // Set = 1 to disable  (Used to exit post_float mode)

@@ -99,8 +99,14 @@ void decide_if_CAN_RBM(void);
 void handle_CAN_Messages(const tN2kMsg &N2kMsg);
 bool handle_CAN_Requests(unsigned long RequestedPGN, unsigned char Requester, int DeviceIndex);
 
+void CAN_ASCII_write(char *stng);
+int  CAN_ASCII_read(void);
+int  CAN_ASCII_available(void);
+
 void invalidate_RBM(void);
 uint8_t fetch_CAN_localID(void);
+
+
 
 
 
@@ -138,11 +144,7 @@ extern unsigned long    CAN_HPUUCS_lastReceived;
 extern int              average_EPC_utilization;
 
 extern uint8_t          CAN_ASCII_source;
-extern int              CAN_ASCII_recieved_count;
-extern char             CAN_ASCII_recieved_characters[8];
-extern char             CANCharBuffer[OUTBOUND_BUFF_SIZE+1];
-extern int              CANCharBuffIndex;
- 
+
 
 
 #endif   // SYSTEMCAN

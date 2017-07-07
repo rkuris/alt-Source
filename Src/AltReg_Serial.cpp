@@ -48,7 +48,7 @@ bool getFloat(char *buffer, float *dest, float LLim, float HLim);
 bool getBool(char *buffer, bool *dest);
 int  frac2int (float frac, int limit);
 void append_string(char *dest, const char *src, int n);
-
+void send_AOK(void);
 
 
 
@@ -70,17 +70,15 @@ void append_string(char *dest, const char *src, int n);
 //------------------------------------------------------------------------------------------------------
 
 bool fill_ib_buffer(){
-
- //  static unsigned int   ibIndex = 0;                                 // This pointer retains its value between function calls.
    static uint8_t   ibIndex = 0;                                        // This pointer retains its value between function calls.
    static unsigned long  ibBufFillStarted;                              // Will contain the time the last 'start' of a string happened
    char c;
 
 
    #ifdef SYSTEMCAN
-     while((Serial.available() > 0) || (CAN_ASCII_recieved_count > 0)){
-        if     (CAN_ASCII_recieved_count > 0)  c = CAN_ASCII_recieved_characters[--CAN_ASCII_recieved_count];
-        else if(Serial.available()       > 0)  c = Serial.read();
+     while((Serial.available() > 0) || (CAN_ASCII_available() > 0)){
+        if     (CAN_ASCII_available()  > 0)  c = CAN_ASCII_read();
+        else if(Serial.available()     > 0)  c = Serial.read();
    #else
       while(Serial.available() > 0){
         c = Serial.read();        
@@ -122,7 +120,6 @@ bool fill_ib_buffer(){
         ibBufFilling = false;                                           //  Yes, abort this and start looking for a new command initiator character ('$')
 #ifdef SYSTEMCAN
         CAN_ASCII_source = 0;                                           // And also reset the CAN terminal ID to Idle mode - something has gotten out of sync and they need to start over..
-        CAN_ASCII_recieved_count = 0;
 #endif
        }
 
@@ -189,9 +186,6 @@ void check_inbound()  {
                }
 
 
-          charBuffer[0] = NULL;                                         // Looks like they really might want some status sent back.  
-                                                                        // Prime buffer ass empty and see if it gets filled.
-
           if ((ibBuf[1] == 'C') && (ibBuf[2] == 'P')) {                 //   They want a copy of one of the Charge Profile Entries
 
             index = ibBuf[4] - '1';                                     //   Which one?  There SHOULD be a number following, go get it.
@@ -208,35 +202,28 @@ void check_inbound()  {
                 transfer_default_CPS(index, &buff.CP);                  //   No, so get the correct entry from the values in the FLASH (PROGMEM) store.
 
             prep_CPE(charBuffer, &buff.CP, index);                      //   And Finally,  assemble the string to send out requested information. 
+            Serial.write(charBuffer);                                   //   Send it out via Serial port
+
+            #ifdef SYSTEMCAN
+              CAN_ASCII_write(charBuffer);                              //  Send this vai a a CAN-wrapper as well (if someone from the CAN asked for it!)
+              #endif  
+
+            return;
             }
 
 
-          if ((ibBuf[1] == 'S') && (ibBuf[2] == 'S'))                   //   They want a copy of the System Status
-            prep_SST(charBuffer); 
-          
-            
-          if ((ibBuf[1] == 'S') && (ibBuf[2] == 'C'))                   //   They want a copy of the System Config
-            prep_SCV(charBuffer); 
-          
+          if ((ibBuf[1] == 'A') && (ibBuf[2] == 'S')) {                 //   They want a copy of all the status strings?
+               send_outbound(true);                                     //      Send them all!
+               send_AOK();                                              // Let user know all the strings have been pushed out.
 
-          if ((ibBuf[1] == 'C') && (ibBuf[2] == 'S'))                   //   They want a copy of the CAN Status
-            prep_SST(charBuffer);  
- 
-
-          if ((ibBuf[1] == 'N') && (ibBuf[2] == 'P'))                   //   They want a copy of the Name/Password (aka Bluetooth) Config
-            prep_NPC(charBuffer); 
+               return;
+               }
+               
+          } //-- End of 'R' tree.
 
 
-          #ifdef SYSTEMCAN
-          if (CAN_ASCII_source != 0) {
-             strcpy (CANCharBuffer, charBuffer);                        //   If a remote CAN node requested this string, send it to them as well.
-             CANCharBuffIndex = 0;                                      // Set pointer to beginning of CAN string to send back.
-             }
-            #endif            
-            
-          Serial.write(charBuffer);                                     // Send out the 'Requested' string our via Serial port
-          return;                                                       //   And we are all done with this command
-        }
+
+
 
 
                 //------  Something about changing a Charge Profile
@@ -328,10 +315,10 @@ void check_inbound()  {
                 case 'B':                                                       // Change BATTERY parameters in CPE user entry n 
                                                                                 //   $CPB:n     <VBat Comp per 1f>, < Min Comp Temp >, <Max Charge Temp>
 
-                        if (!getFloat((ibBuf + 5),      &buff.CP.BAT_TEMP_1F_COMP,     0.0, 0.1)) return;       //   0.1v / deg f MAX.  (Note, this is for a normalized 12v battery)
-                        if (!getInt  ( NULL,            &buff.CP.MIN_TEMP_COMP_LIMIT,  -20, 100)) return;       //  -20f to 100f range should be good???
-                        if (!getInt  ( NULL,            &buff.CP.BAT_MIN_CHARGE_TEMP,  -50,  20)) return;
-                        if (!getInt  ( NULL,            &buff.CP.BAT_MAX_CHARGE_TEMP,   70, 200)) return;       //  Cap at 200 to protect NTC sensor? (Esp Epoxy filling??)
+                        if (!getFloat((ibBuf + 5),      &buff.CP.BAT_TEMP_1C_COMP,      0.0, 0.1)) return;       //   0.1v / deg C MAX.  (Note, this is for a normalized 12v battery)
+                        if (!getInt  ( NULL,            &buff.CP.MIN_TEMP_COMP_LIMIT,   -30,  40)) return;       //  -30c to 40c range should be good???
+                        if (!getInt  ( NULL,            &buff.CP.BAT_MIN_CHARGE_TEMP,   -50,  10)) return;
+                        if (!getInt  ( NULL,            &buff.CP.BAT_MAX_CHARGE_TEMP,    20,  95)) return;       //  Cap at 95 to protect NTC sensor? (Esp Epoxy filling??)
                         break;  
 
 
@@ -339,7 +326,7 @@ void check_inbound()  {
                         
                 case 'R':                                                       // $CPR:n  RESTORES Charge Profile table entry 'n' to default 
                         write_CPS_EEPROM(index, NULL);                          // Erase selected saved systemConfig structure in the EEPROM (if present)
-                        Serial.write("AOK;\r\n");                               // Let user know we understand.
+                        send_AOK();                                             // Let user know we understand.
                         return;                                                 // All done.
                         
 
@@ -348,7 +335,7 @@ void check_inbound()  {
                 }
 
                 write_CPS_EEPROM(index, &buff.CP);                              // Save back the new entry
-                Serial.write("AOK;\r\n");                                       // Let user know we understand.
+                send_AOK();                                                     // Let user know we understand.
                 return;                                                         // And return to see if more commands are being sent.  User must issue $RBT command for changes
                                                                                 //   to be loaded into regulators working memory.
              }
@@ -372,7 +359,7 @@ void check_inbound()  {
                                                                                 //       <Alt Amp Cap.>, <System Watt Cap. >, <Amp Shunt Ratio>
                         bool dummy;
                         if (!getBool ((ibBuf + 4), &dummy                                 )) return;  // Was 'Favor32v' has been redacted, ignor it.
-                        if (!getByte (NULL, &buff.SC.ALT_TEMP_SETPOINT,            60, 240)) return;                                    
+                        if (!getByte (NULL, &buff.SC.ALT_TEMP_SETPOINT,            15, 120)) return;                                    
                         if (!getFloat(NULL, &buff.SC.ALT_AMP_DERATE_NORMAL,       0.1, 1.0)) return;
                         if (!getFloat(NULL, &buff.SC.ALT_AMP_DERATE_SMALL_MODE,   0.1, 1.0)) return;
                         if (!getFloat(NULL, &buff.SC.ALT_AMP_DERATE_HALF_POWER,   0.1, 1.0)) return;
@@ -388,11 +375,12 @@ void check_inbound()  {
                         
 
                 case 'T':                                                             // Changes TACHOMETER parameters in System Configuration table
-                                                                                      // $SCT: <Alt poles>, < Eng/Alt drive ratio >, <Field Tach Min>
+                                                                                      // $SCT: <Alt poles>, < Eng/Alt drive ratio >, <Field Tach Min>, <Forced TachMode>
 
                         if (!getByte((ibBuf + 4), &buff.SC.ALTERNATOR_POLES ,        2,            25)) return;
                         if (!getFloat(NULL,       &buff.SC.ENGINE_ALT_DRIVE_RATIO, 0.5,          20.0)) return;
                         if (!getInt  (NULL,       &buff.SC.FIELD_TACH_PWM,          -1,            30)) return;
+                        if (!getBool (NULL,       &buff.SC.FORCED_TM                                 )) return;
                         
                         if (buff.SC.FIELD_TACH_PWM > 0)
                                 buff.SC.FIELD_TACH_PWM = min(((buff.SC.FIELD_TACH_PWM * FIELD_PWM_MAX)/100)   , MAX_TACH_PWM);
@@ -445,7 +433,7 @@ void check_inbound()  {
 
                 case 'R':                                                       // RESTORES System Configuration table to default
                         write_SCS_EEPROM(NULL);                                 // Erase any saved systemConfig structure in the EEPROM
-                        Serial.write("AOK;\r\n");                               // Let user know we understand.
+                        send_AOK();                                             // Let user know we understand.
                         return;                                                 // All done.
 
                 default:        return;
@@ -453,7 +441,7 @@ void check_inbound()  {
 
 
             write_SCS_EEPROM(&buff.SC);                                         // Save back the new Charge profile 
-            Serial.write("AOK;\r\n");                                           // Let user know we understand.
+            send_AOK();                                                         // Let user know we understand.
             return;                                                             // And return to see if more commands are being sent.  User must issue $RBT command for changes
                                                                                 //   to be loaded into regulators working memory.
             }
@@ -477,7 +465,7 @@ void check_inbound()  {
 
                 case 'R':                                                       // RESTORES CAN Configuration table to default
                         write_CCS_EEPROM(NULL);                                 // Erase any saved CANConfig structure in the EEPROM
-                        Serial.write("AOK;\r\n");                               // Let user know we understand.
+                        send_AOK();                                             // Let user know we understand.
                         return;                                                 // All done.
     
 
@@ -502,7 +490,7 @@ void check_inbound()  {
 
 
             write_CCS_EEPROM(&buff.CC);                                         // Save back the new CAN Configuration structure
-            Serial.write("AOK;\r\n");                                           // Let user know we understand.
+            send_AOK();                                                         // Let user know we understand.
             return;                                                             // And return to see if more commands are being sent.  User must issue $RBT command for changes
                                                                                 //   to be loaded into regulators working memory.
             }
@@ -528,7 +516,7 @@ void check_inbound()  {
                         EORLastReceived = millis();                             // Looks like we got a good one, note the time received.
                         usingEXTAmps    = true;
                         measuredBatAmps = proposedBatAmps;                      // Only change if a valid number is sent to us, else just leave the existing value alone.
-                        Serial.write("AOK;\r\n");                               // Let user know we understand.
+                        send_AOK();                                             // Let user know we understand.
                         }                
                 return;
                 }
@@ -536,7 +524,7 @@ void check_inbound()  {
 
 
         if ((ibBuf[0] == 'E') && (ibBuf[1] == 'D') && (ibBuf[2] == 'B')) {      // $EDB:  Enable DeBug ASCII string??
-                Serial.write("AOK;\r\n");                                       // Let user know we understand.
+                send_AOK();                                                     // Let user know we understand.
   
                 SDMCounter      = SDM_SENSITIVITY;                              // Yes, set up the counters and turn on the switch!
                 sendDebugString = true;
@@ -547,8 +535,7 @@ void check_inbound()  {
         if ((ibBuf[0] == 'M') && (ibBuf[1] == 'S') && (ibBuf[2] == 'R')) {      // $MSR:  Master System Restore?
                 if (systemConfig.CONFIG_LOCKOUT != 0)   return;                 // If system is locked-out, do not allow restore.
 
-                Serial.write("AOK;\r\n");                                       // Let user know we understand.
-  
+                send_AOK();                                                     // Let user know we understand.
                 restore_all();                                                  // Yes.  Erase all the EEPROM and reset. (we will not come back from here)
                 }                                                               //  btw: doing individual character compares as done here uses about 25 bytes less
                                                                                 // code then using  -- strstr(ibBuf,"MSR") != NULL -- 
@@ -580,13 +567,9 @@ void check_inbound()  {
                         }
 
 
-                Serial.write("AOK;\r\n");                                       // One got through!  Let user know we understand.
-                
+                send_AOK();                                                     // One got through!  Let user know we understand.
                 return;  
-                
                 }
-
-                
 
         }
 
@@ -643,6 +626,14 @@ bool getBool(char *buffer, bool *dest) {
    }   
 
 
+void send_AOK(void) {
+    Serial.write("AOK;\r\n");                               
+    
+    #ifdef SYSTEMCAN
+      CAN_ASCII_write("AOK;\r\n");                                      // And CAN wrapper incase they are the one who asked for it.
+      #endif  
+  }
+
 
 
 
@@ -652,25 +643,23 @@ bool getBool(char *buffer, bool *dest) {
 //      This function will send to the Serial Terminal the current system status.  It is used to send
 //      information primarily via the Bluetooth to an external HUI program.  
 //
-//      In FAULTED conditions no check will be made in timing or counters to pace the rate of data
-//      being sent, data will simple be sent.
+//      If pushAll is TRUE, no check will be made in timing or counters to pace the rate of data
+//      being sent and a copy of all status strings will be sent.  This is usefull in the case of FAULTED condition.
 //
 //      
 // 
 //------------------------------------------------------------------------------------------------------
 
 
-void  send_outbound() {
-
-char    charBuffer[OUTBOUND_BUFF_SIZE+1];                                                       // Large working buffer to assemble strings before sending to the serial port.
-uint8_t i, j;
-unsigned long static lastStatusSent = 0U;                                                        // When was the Status last sent?
-
+void  send_outbound(boolean pushAll) {
+    char    charBuffer[OUTBOUND_BUFF_SIZE+1];                                                       // Large working buffer to assemble strings before sending to the serial port.
+    uint8_t i, j;
+    unsigned long static lastStatusSent = 0U;                                                        // When was the Status last sent?
 
 
- if (alternatorState != FAULTED)  {                                                             // Only do these pacing / restart checks if the system is not Faulted.
-                                                                                                // If we are in a FAULT state, then send out the data no matter what...
-    if ((millis() - lastStatusSent) < UPDATE_STATUS_RATE)     return;                           // Time to send Update packet?  No, not just yet.
+
+ if (!pushAll)  {                                                                               // Check to see if we need to be pacing the strings out.
+    if ((millis() - lastStatusSent) < UPDATE_STATUS_RATE)     return;                           // Looks like it, Time to send Update packet?  No, not just yet.
     if( ibBufFilling == true)                                 return;                           // Suspend the sending of status updates while a new command is being assembled.
     }                                                                                           // This way there is no confusion over data received from the regulator as to if it
                                                                                                 // is a response to a request-for command, or just the 'normal' status data being pushed out.
@@ -685,19 +674,31 @@ unsigned long static lastStatusSent = 0U;                                       
   for (i=0; i <= 5; i++) {                                                                  // Loop through all strings, seeing which ones we should send this time.
       charBuffer[0] = '\0';  
       
-      if (i == 0)                                                                                  prep_AST(charBuffer);                          // Alternator STatus goes each cycle through                                              
-      if((i == 1)  &&  ((j == ((1*UPDATE_MAJOR_SENSITIVITY/5)-1))||(alternatorState == FAULTED)))  prep_SST(charBuffer);                          // Send the System Status
-      if((i == 2)  &&  ((j == ((2*UPDATE_MAJOR_SENSITIVITY/5)-1))||(alternatorState == FAULTED)))  prep_CST(charBuffer);                          // Send the CAN Control Variables  (n/a on 1st gen regulator)
-      if((i == 3)  &&  ((j == ((3*UPDATE_MAJOR_SENSITIVITY/5)-1))||(alternatorState == FAULTED)))  prep_CPE(charBuffer, &workingParms, cpIndex);  // Send the currently active charge profile
-      if((i == 4)  &&  ((j == ((4*UPDATE_MAJOR_SENSITIVITY/5)-1))||(alternatorState == FAULTED)))  prep_SCV(charBuffer);                          // Send the System Control Variables (using this buffer as a work space)
-      if((i == 5)  &&  ((j == ((5*UPDATE_MAJOR_SENSITIVITY/5)-1)) |(alternatorState == FAULTED)))  prep_NPC(charBuffer);                          // Send the Name/Password (was Bluetooth) Config. 
-      
-      if (charBuffer[0] != '\0')                                                           // Was a string prepared for us to send?
-          Serial.write(charBuffer);                      
+      if (i == 0)                                                                 prep_AST(charBuffer);                          // Alternator STatus goes each cycle through                                              
+      if((i == 1)  &&  ((j == ((1*UPDATE_MAJOR_SENSITIVITY/5)-1)) || (pushAll)))  prep_SST(charBuffer);                          // Send the System Status
+      if((i == 2)  &&  ((j == ((2*UPDATE_MAJOR_SENSITIVITY/5)-1)) || (pushAll)))  prep_CST(charBuffer);                          // Send the CAN Control Variables  (n/a on 1st gen regulator)
+      if((i == 3)  &&  ((j == ((3*UPDATE_MAJOR_SENSITIVITY/5)-1)) || (pushAll)))  prep_CPE(charBuffer, &workingParms, cpIndex);  // Send the currently active charge profile
+      if((i == 4)  &&  ((j == ((4*UPDATE_MAJOR_SENSITIVITY/5)-1)) || (pushAll)))  prep_SCV(charBuffer);                          // Send the System Control Variables (using this buffer as a work space)
+      if((i == 5)  &&  ((j == ((5*UPDATE_MAJOR_SENSITIVITY/5)-1)) || (pushAll)))  prep_NPC(charBuffer);                          // Send the Name/Password (was Bluetooth) Config. 
+
+
+
+      if (charBuffer[0] != '\0') {                                                           // Was a string prepared for us to send?
+          Serial.write(charBuffer); 
+
+          #ifdef SYSTEMCAN
+            CAN_ASCII_write(charBuffer);                                                      //  Send this vai a a CAN-wrapper as well (if someone from the CAN asked for it!)
+            #endif    
+          }
+
+             
    }
+   
 
   lastStatusSent = millis();
   UMCounter++;
+
+ 
 }
 
 
@@ -739,8 +740,8 @@ void prep_AST(char *buffer) {                                                   
         targetAltWatts,
         alternatorState,
 
-        measuredBatTemp,                                                                // In deg F
-        max(measuredAltTemp,measuredAlt2Temp),
+        measuredBatTemp,                                                               // In deg C
+        max(measuredAltTemp, measuredAlt2Temp),
 
 
         measuredRPMs,
@@ -792,8 +793,8 @@ void prep_CPE(char *buffer, CPS  *cpsPtr, int index) {
         (unsigned int)   (cpsPtr->EXIT_EQUAL_DURATION/60000UL),                                             //  Show in Minutes, as opposed to mS,
                           cpsPtr->EXIT_EQUAL_AMPS ,
 
-        (int)             cpsPtr->BAT_TEMP_1F_COMP,
-        frac2int         (cpsPtr->BAT_TEMP_1F_COMP,1000),
+        (int)             cpsPtr->BAT_TEMP_1C_COMP,
+        frac2int         (cpsPtr->BAT_TEMP_1C_COMP,1000),
                           cpsPtr->MIN_TEMP_COMP_LIMIT,
                           cpsPtr->BAT_MIN_CHARGE_TEMP,
                           cpsPtr->BAT_MAX_CHARGE_TEMP);
@@ -802,9 +803,9 @@ void prep_CPE(char *buffer, CPS  *cpsPtr, int index) {
 
 
 void prep_SCV(char *buffer) {                                                                               // Prep the System Control Variables.  Pass in working buffer of OUTBOUND_BUFF_SIZE
-        snprintf_P(buffer, OUTBOUND_BUFF_SIZE, PSTR("SCV;,%1u,%1u,%1u,%d.%02d,%d.%02d,%1u, ,%d,%d.%02d,%d.%02d,%d.%02d,%d, ,%d,%d, ,%d,%d.%02d,%d, ,%d,%d\r\n"),
+        snprintf_P(buffer, OUTBOUND_BUFF_SIZE, PSTR("SCV;,%1u,,%1u,%d.%02d,%d.%02d,%1u, ,%d,%d.%02d,%d.%02d,%d.%02d,%d, ,%d,%d, ,%d,%d.%02d,%d, ,%d,%d\r\n"),
                   systemConfig.CONFIG_LOCKOUT,
-                  systemConfig.FAVOR_32V_redact,
+                  // REDACTED --> systemConfig.FAVOR_32V_redact,
                   systemConfig.REVERSED_SHUNT,
         (int)     systemConfig.SV_OVERRIDE,
         frac2int (systemConfig.SV_OVERRIDE, 100),
@@ -852,7 +853,7 @@ void prep_NPC(char *buffer) {                                                   
 
 
 void prep_SST(char *buffer) { 
-        snprintf_P(buffer,OUTBOUND_BUFF_SIZE-3, PSTR("SST;,%s, ,%1u,%1u, ,%d,%d.%02d,%d.%02d, ,%d,%d, ,%d,%d\r\n"), //  System Status 
+        snprintf_P(buffer,OUTBOUND_BUFF_SIZE-3, PSTR("SST;,%s, ,%1u,%1u, ,%d,%d.%02d,%d.%02d, ,%d,%d, ,%d,%d, ,%1u\r\n"), //  System Status 
                 firmwareVersion,
 
                 smallAltMode,
@@ -869,7 +870,9 @@ void prep_SST(char *buffer) {
                 altCapRPMs,
 
                 (int)((accumulatedLrAH / 3600UL)  * (ACCUMULATE_SAMPLING_RATE / 1000UL)),               // Convert into actual AHs
-                (int)((accumulatedLrWH / 3600UL)  * (ACCUMULATE_SAMPLING_RATE / 1000UL))                // Convert into actual WHs                                              
+                (int)((accumulatedLrWH / 3600UL)  * (ACCUMULATE_SAMPLING_RATE / 1000UL)),               // Convert into actual WHs   
+
+                systemConfig.FORCED_TM                                           
                 );
 
         }

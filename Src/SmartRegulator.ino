@@ -210,7 +210,6 @@ void setup() {
         #endif
 
 
-
         //---  Assign Atmel pins and their functions.  
         //         Am using Arduino calls as opposed to Atmel - to make things easier to read.
         //         Make sure to also see the Initialze_xxx(); functions, as they will also assign port values.
@@ -241,9 +240,7 @@ void setup() {
   
   wdt_reset();                                                                          // Pat-pat..
 
-
-
-   
+  
 
 
         //--------      Adjust System Configuration
@@ -312,8 +309,10 @@ void setup() {
                                                                                         
    thresholdPWMvalue = systemConfig.FIELD_TACH_PWM;                                     // Transfer over the users desire into the working variable.  If -1, we will do Auto determine.  If anything else we will just use that
                                                                                         // value as the MIN PWM drive.  Note if user sets this = 0, they have in effect disabled Tack mode independent DIP switch.
+   if (systemConfig.FORCED_TM == true)
+      tachMode = true;                                                                  // If user has set a specific value, or asked for auto-size, then we must assume they want Tach-mode enabled, independent of the DIP
 
-   
+
    
 
 
@@ -1381,7 +1380,7 @@ void handle_fault_condition() {
              snprintf_P(buffer,sizeof(buffer)-1, PSTR("FLT;%d\r\n"), j);                        // Just send out the Fault Code number.
 
         Serial.write(buffer);
-        send_outbound();                                                                        // And follow it with all the rest of the status information.
+        send_outbound(true);                                                                    // And follow it with all the rest of the status information.
 
 
 
@@ -1518,7 +1517,7 @@ void loop()  {
         check_inbound();                                                                                // See if any communication is coming in via the Bluetooth (or DEBUG terminal), or Feature-in port.
 
         update_run_summary();                                                                           // Update the Run Summary variables
-        send_outbound();                                                                                // And send the status via Bluetooth
+        send_outbound(false);                                                                           // And send the status via serial port - pacing the strings out.
         update_LED();                                                                                   // Set the blinking pattern and refresh it. (Will also blink the FEATURE_OUT if so configured via #defines
         update_feature_out();                                                                           // Handle any other FEATURE_OUT mode (as defined by #defines) other then Blinking.
  
@@ -1526,7 +1525,7 @@ void loop()  {
         #ifdef SYSTEMCAN
           send_CAN();                                                                                   // Send out CAN status messages.
           check_CAN();                                                                                  // See if we have any incoming messages.
-          decide_if_CAN_RBM();                                                                             // Decide who the Can RemoteBatteryMaster will be.  Including if it should be us.
+          decide_if_CAN_RBM();                                                                          // Decide who the Can RemoteBatteryMaster will be.  Including if it should be us.
           #endif 
 
 

@@ -66,7 +66,7 @@ bool    shuntAmpsMeasured = false;                                      //  acco
 int     measuredAltWatts  = 0;
 
 
-int     measuredFETTemp   = -99;                                        // -99 indicated not present.  Temperature of Field FETs, in degrees F.
+int     measuredFETTemp   = -99;                                        // -99 indicated not present.  Temperature of Field FETs, in degrees C.
 int     measuredAltTemp   = -99;                                        // -99 indicated not present.  -100 indicates user has shorted the Alt probe and we should run in half-power mode.
 int     measuredAlt2Temp  = -99;                                        // -99 indicated not present.  Value derived from 2nd NTC port if battery temperature is delivered by an external source via the CAN.
 int     measuredBatTemp   = -99;                                        // -99 indicates we have not measured this yet, or the sender has failed and we need to use Defaults.
@@ -916,10 +916,10 @@ void sample_NTCs(void) {
 void read_NTCs(void) {
 
     if ((accumulatedNTCSamples  < NTC_AVERAGING) || ((accumulatedNTCSamples % 3) != 0))
-        return;                                                                             // Not ready to do calculation yet, or counter  in mid-cycle through the NTC ports (messes up average)!
+        return;                                                                               // Not ready to do calculation yet, or counter  in mid-cycle through the NTC ports (messes up average)!
 
         
-    measuredAltTemp  = normalizeNTCAverage(accumulatedNTC_A, NTC_BETA, true);               // Convert the A NTC sensor for the alternator.
+    measuredAltTemp  = normalizeNTCAverage(accumulatedNTC_A, NTC_BETA, true);                 // Convert the A NTC sensor for the alternator.
     
     
     
@@ -928,36 +928,36 @@ void read_NTCs(void) {
     //      (e.g., the CAN bus), then port B can be repurposed as an 2nd alternator sensor.
     
     if (batTempExternal == true)                                                                                    
-        measuredAlt2Temp = normalizeNTCAverage(accumulatedNTC_B, NTC_BETA, true);           // We are receiving the Battery temp externally; B port is used for a 2nd alternator probe.
-    else                                                                                    // (the CAN handler function will deal with updating battery temperature)
-        measuredBatTemp  = normalizeNTCAverage(accumulatedNTC_B, NTC_BETA, true);           // Not receiving battery temp, so we will treat the B port as connected to the battery.
+        measuredAlt2Temp = normalizeNTCAverage(accumulatedNTC_B, NTC_BETA, true);             // We are receiving the Battery temp externally; B port is used for a 2nd alternator probe.
+    else                                                                                      // (the CAN handler function will deal with updating battery temperature)
+        measuredBatTemp  = normalizeNTCAverage(accumulatedNTC_B, NTC_BETA, true);             // Not receiving battery temp, so we will treat the B port as connected to the battery.
 
     
     #ifdef NTC_FET_PORT
-        measuredFETTemp    = normalizeNTCAverage(accumulatedNTC_FET, NTC_BETA_FETs, false); // And also convert the FET sensor (Onboard FET NTC does not have a Ground Isolation Resistor)
+        measuredFETTemp    = normalizeNTCAverage(accumulatedNTC_FET, NTC_BETA_FETs, false);   // And also convert the FET sensor (Onboard FET NTC does not have a Ground Isolation Resistor)
         #endif
 
-    if ((measuredBatTemp  > 250) || (measuredBatTemp  < -40)) measuredBatTemp  = -99;       // Out of bound A/D reading, indicates something is wrong...
-    if ((measuredAlt2Temp > 250) || (measuredAlt2Temp < -40)) measuredAlt2Temp = -99;  
+    if ((measuredBatTemp  > 120) || (measuredBatTemp  < -40)) measuredBatTemp  = -99;         // Out of bound A/D reading, indicates something is wrong...
+    if ((measuredAlt2Temp > 120) || (measuredAlt2Temp < -40)) measuredAlt2Temp = -99;  
     
-    if  (measuredAltTemp  > 320)                              measuredAltTemp  = -100;      // If user has shorted out the Alt sensor - 
-    else                                                                                    // that indicates they want to run in 1/2 power mode   
-      if((measuredAltTemp > 250) || (measuredAltTemp  < -40)) measuredAltTemp  = -99;  
+    if  (measuredAltTemp  > 160)                              measuredAltTemp  = -100;        // If user has shorted out the Alt sensor - 
+    else                                                                                      // that indicates they want to run in 1/2 power mode   
+      if((measuredAltTemp > 120) || (measuredAltTemp  < -40)) measuredAltTemp  = -99;  
 
           
     #ifdef NTC_FET_PORT 
-      if ((measuredFETTemp > 250) || (measuredFETTemp < -40)) measuredFETTemp = -99;  
+      if ((measuredFETTemp > 120) || (measuredFETTemp < -40)) measuredFETTemp = -99;  
       #endif
      
-    accumulatedNTC_A = 0;                                                                   // Reset the accumulators and counter
+    accumulatedNTC_A = 0;                                                                     // Reset the accumulators and counter
     accumulatedNTC_B  = 0;
     accumulatedNTC_FET = 0;
     accumulatedNTCSamples = 0;
 
 
 #ifdef SIMULATION
-    measuredBatTemp  = 80;
-    measuredAltTemp  = 95;
+    measuredBatTemp  = 28;
+    measuredAltTemp  = 35;
     measuredFETTemp  = -99;
 #endif
 
@@ -973,9 +973,8 @@ int normalizeNTCAverage(unsigned long accumulatedSample, int beta, bool hasRG)  
     resistanceNTC = (float)NTC_RF / resistanceNTC;
 
     if (hasRG)  resistanceNTC -= (float)NTC_RG;                                         // Adjust for the Ground Isolation Resistor, if this sensor has one.
-                                                                                        // Use Beta method for calculating dec-C, 
-                                                                                        // and convert to Deg-F before losing precision of floating point numbers.
-    return((int) (((1 / (log(resistanceNTC / NTC_RO) / beta + 1 / (25.0+273.15) ) - 273.15) * (9.0/5.0)) + 32.0));
+                                                                                        // Use Beta method for calculating dec-C.
+    return((int)(1 / (log(resistanceNTC / NTC_RO) / beta + 1 / (25.0+273.15) ) - 273.15));
     
  }
 

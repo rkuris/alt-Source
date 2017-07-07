@@ -53,11 +53,11 @@ void commit_EEPROM(void);
                 //----- The following are used during the management of the EEPROM, to validate saved data
                 //      If a structure format is changed, change these keys to help invalidate prior saved data in the CPU.
 
-#define SCS_ID1_K  0xFC3A                                       // Key value that should be contained in the EEPROM EKEY structure to indicate a valid sytemConfig structure has been saved
+#define SCS_ID1_K  0xF3CA                                       // Key value that should be contained in the EEPROM EKEY structure to indicate a valid sytemConfig structure has been saved
 #define SCS_ID2_K  0x69D3
-#define CPS_ID1_K  0xB66C                                       // Key value that should be continued in the EEPROM EKEY structure to indicate a valid CPE structure has been saved
+#define CPS_ID1_K  0x6B6C                                       // Key value that should be continued in the EEPROM EKEY structure to indicate a valid CPE structure has been saved
 #define CPS_ID2_K  0x0A47                                       // (Changed in 0.2.0 - as CPS was expanded)
-#define CAL_ID1_K  0x1FAC                                       // Calibration Structure
+#define CAL_ID1_K  0xF0AC                                       // Calibration Structure
 #define CAL_ID2_K  0x0A97
 #define CCS_ID1_K  0x813A                                       // CAN structure                
 #define CCS_ID2_K  0xC03A
@@ -66,19 +66,16 @@ void commit_EEPROM(void);
 
 
                 //-----  EEPROM is laid out in this way:  (I was not able to get #defines to work, as the preprocessor seems to not be able to handle sizeof() )
-                //          EEPROM_EKEY @ 0                                  
-                //          EEPROM_SCS  @ sizeof(EKEY)
-                //          EEPROM_CPS  @ sizeof(EKEY)  + sizeof(SCS)
-                //          EEPROM_CAL  @ sizeof(EKEY)  + sizeof(SCS)  + sizeof(CPS)*MAX_CPES
-                //          EEPROM_CCS  @ sizeof(EKEY)  + sizeof(SCS)  + sizeof(CPS)*MAX_CPES + sizeof(CAL)
+                //       CAL is placed 1st in hopes it will not be invalidated as revs change.
+
                 
                 
 
 #define  EKEY_FLASH_LOCAITON  0
-#define  SCS_FLASH_LOCAITON  (sizeof(EKEY))
-#define  CPS_FLASH_LOCAITON  (sizeof(EKEY) + sizeof(SCS) + (sizeof(CPS)*index))
-#define  CAL_FLASH_LOCAITON  (sizeof(EKEY) + sizeof(SCS) + (sizeof(CPS)*MAX_CPES)) 
-#define  CCS_FLASH_LOCAITON  (sizeof(EKEY) + sizeof(SCS) + (sizeof(CPS)*MAX_CPES)  + sizeof(CAL))
+#define  CAL_FLASH_LOCAITON  (sizeof(EKEY))
+#define  CPS_FLASH_LOCAITON  (sizeof(EKEY) + sizeof(CAL) + (sizeof(CPS)*index))
+#define  SCS_FLASH_LOCAITON  (sizeof(EKEY) + sizeof(CAL) + (sizeof(CPS)*MAX_CPES)) 
+#define  CCS_FLASH_LOCAITON  (sizeof(EKEY) + sizeof(CAL) + (sizeof(CPS)*MAX_CPES)  + sizeof(SCS))
 
 
 

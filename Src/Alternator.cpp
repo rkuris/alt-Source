@@ -113,9 +113,8 @@ unsigned long   EORLastReceived;                                        //   And
                                 //---   Default System Config variable is defined here.
     
 SCS systemConfig = {
-        false,                          // .FAVOR_32V_redact            --> Feature removed, allways FALSE (and now ignored) Do NOT favor 32v systems over 24/48v during auto-detection.
         false,                          // .REVERSED_SHUNT              --> Assume shunt is not reversed.
-        200,                            // .ALT_TEMP_SETPOINT           --> Default Alternator temp - 200f
+        95,                             // .ALT_TEMP_SETPOINT           --> Default Alternator temp - 95c  (Approx 205f)
         1.00,                           // .ALT_AMP_DERATE_NORMAL       --> Normal cap Alternator at 100% of demonstrated max Amp capability, 
         0.75,                           // .ALT_AMP_DERATE_SMALL_MODE   --> Unless user has selected Small Alt Mode via DIP switch, then do 75% of its capability
         0.50,                           // .ALT_AMP_DERATE_HALF_POWER   --> User has shorted out the Alternator Temp NTC probe, indicating they want to do 1/2 power mode.
@@ -132,6 +131,7 @@ SCS systemConfig = {
         -1,                             // .FIELD_TACH_PWM              --> If user has selected Tach Mode, use this for MIN Field PWM.  
                                         //                                    Set = -1 to 'auto determine' the this value during RAMP phase
                                         //                                    Set =  0 to in effect 'disable' tach mode, independent of the DIP switch.
+        0,                              // .FORCED_TM                   --> User can FORCE tach mode independent of DIP switch using $SCT command.  0=DIP/off, 1=Force-on
 
         true,                           // .USE_BT                      --> Should we try to use the Bluetooth?
         "ALTREG",                       // .REG_NAME                    --> Name of Regulator (Used for NMEA2000 and Bluetooth) module.  MAX 18 CHARS LONG!  (see MAX_NAME_LEN)
@@ -349,7 +349,7 @@ int     i;
                                                                                                         // in effect turning off the regulator.
 
 
- if ((measuredBatTemp != -99) && (alternatorState != RBM_CVCC) &&                                       // If we are able to measure battery temperature (and remote Master is not in TOTAL control of things...)
+ if ((measuredBatTemp != -99) && (alternatorState != RBM_CVCC) &&                                        // If we are able to measure battery temperature (and remote Master is not in TOTAL control of things...)
      ((measuredBatTemp >= workingParms.BAT_MAX_CHARGE_TEMP) || (measuredBatTemp <= workingParms.BAT_MIN_CHARGE_TEMP)))
         set_ALT_mode(float_charge);                                                                     // If we are too warm or too cold - force charger to Float Charge safety voltage.
 
@@ -499,7 +499,7 @@ int     i;
               i = workingParms.MIN_TEMP_COMP_LIMIT;                                                     // 'limit' - else we risk overvolting the battery in very cold climates.
         else  i = measuredBatTemp;
 
-        targetBatVolts += (BAT_TEMP_NOMINAL - i) * workingParms.BAT_TEMP_1F_COMP * systemVoltMult ;
+        targetBatVolts += (BAT_TEMP_NOMINAL - i) * workingParms.BAT_TEMP_1C_COMP * systemVoltMult ;
         }
 
 
@@ -712,6 +712,7 @@ void manage_ALT()  {
   float  errorV;                                        // Calc the real-time delta error (P value of PID) Measured - target:  Note the order, over target will result in positive number!
   float  errorA;
   float  errorW;
+  bool   atTargVoltage;                                 // Have we reached the target voltage?  Used when checking to see if we are ready to transation to the next Mode.
 
 
   float VdErr;                                          //  Calculate 1st order derivative of VBat error  (Rate of Change, D value of PID)
@@ -767,6 +768,12 @@ void manage_ALT()  {
         errorV = measuredBatVolts -  targetBatVolts;                                            // Calc the error values, as they are used a lot down the road.
         errorA = measuredAltAmps  -  targetAltAmps;                                             // + = over target, - = under target.
         errorW = measuredAltWatts - (targetAltWatts * otWattsPullbackFactor);                   // (Adjust down Target Alt Watts for any overtemp condition...)
+
+
+        atTargVoltage = ((errorV + (PID_VOLTAGE_SENS * systemVoltMult)) >= 0);                  // We only need to be within 'shooting range' of the target votlage to conider we have met the conditions.
+                                                                                                //  (Helpful with small alternators which may not be able to push over the target voltage on low-impedance batteries)
+
+
 
         enteredMills = millis();                                                                // Remember this as we are going to use it a lot..
                                                                                                 // Using the working variable saves code size, and also assures we have consistency with all
@@ -959,9 +966,9 @@ void manage_ALT()  {
 
 
 
+
+
         switch (alternatorState) {
-
-
 
           case pending_R:
                 if ((tachMode) && (systemConfig.FIELD_TACH_PWM > 0))                                    // If user has configured system to have a min PWM value for Tach mode
@@ -996,7 +1003,7 @@ void manage_ALT()  {
 
 
                 if ((fieldPWMvalue >= fieldPWMLimit) ||                                                 // Driving alternator full bore?
-                    (errorV >= 0)                    ||                                                 // Reached terminal voltage?
+                    (atTargVoltage)                  ||                                                 // Reached terminal voltage?
                     (errorA >= 0)                    ||                                                 // Reached terminal Amps?
                     (errorW >= 0)                    ||                                                 // Reached terminal Watts?  (Reaching ANY of these limits should cause exit of RAMP mode)
                     ((enteredMills - altModeChanged) >=  PWM_RAMP_RATE*FIELD_PWM_MAX/PWM_CHANGE_CAP)) {
@@ -1022,7 +1029,7 @@ void manage_ALT()  {
           case determine_ALT_cap:
                 if ((systemConfig.ALT_AMPS_LIMIT != -1) ||                                              // If we are NOT configured to auto-determining the Alt Capacity,   --OR--
                     (fieldPWMvalue == FIELD_PWM_MAX)    ||                                              // we have Maxed Out the Field (PWM capping should have been removed during alt_cap mode) --OR--
-                    (errorV >= 0)                       ||                                              // Reached terminal voltage?  --OR-- (meaning, we really can not finish determine the Alt cap as the battery is kind of full.....)
+                    (atTargVoltage)                     ||                                              // Reached terminal voltage?  --OR-- (meaning, we really can not finish determine the Alt cap as the battery is kind of full.....)
                     ((enteredMills - altModeChanged) >= SAMPLE_ALT_CAP_DURATION)){                      // And have been doing an Alt Cap Sampling Cycle long enough..
 
                         set_ALT_mode(bulk_charge);                                                      // Stop this cycle - go back to Bulk Charge mode.
@@ -1049,7 +1056,7 @@ void manage_ALT()  {
 
 
           case bulk_charge:
-                if (errorV >= 0) {                                                                      // Have we reached terminal voltage during Bulk?
+                if (atTargVoltage) {                                                                    // Have we reached terminal voltage during Bulk?
                    adptExitAcceptDuration   = (enteredMills - altModeChanged) * ADPT_ACPT_TIME_FACTOR;  // Calculate a time-only based acceptance duration based on how long we had been in Bulk mode,
                                                                                                         //    (In case we cannot see Amps.)
                    set_ALT_mode(acceptance_charge);                                                     // Bulk is easy - got the volts so go into Acceptance Phase!
@@ -1100,17 +1107,18 @@ void manage_ALT()  {
 
 
           case acceptance_charge:
-                if (((enteredMills - altModeChanged) >= workingParms.EXIT_ACPT_DURATION)        ||      // 3 ways to exit.  Have we have been in Acceptance Phase long enough?  --OR--
+                if (((workingParms.EXIT_ACPT_DURATION > 0)                        &&
+                     ((enteredMills - altModeChanged) >= workingParms.EXIT_ACPT_DURATION))      ||      // 3 ways to exit.  Have we have been in Acceptance Phase long enough?  --OR--
 
-                   (((workingParms.EXIT_ACPT_AMPS  == -1)   ||                                          // Have we been configured to do Adaptive Acceptance?
-                     ((shuntAmpsMeasured == false) && (usingEXTAmps == false)))   &&                    //   (Or if we are unable to measure Amps, force Adaptive Acceptance, to protect the battery)
-                    ((enteredMills - altModeChanged)      >=   adptExitAcceptDuration))         ||      // ..  Yes, early exit Acceptance Phase if we have exceeded the amount of time in Bulk by x-factor.
+                    (((workingParms.EXIT_ACPT_AMPS  == -1)   ||                                         // Have we been configured to do Adaptive Acceptance?
+                      ((shuntAmpsMeasured == false) && (usingEXTAmps == false)))   &&                   //   (Or if we are unable to measure Amps, force Adaptive Acceptance, to protect the battery)
+                     ((enteredMills - altModeChanged)      >=   adptExitAcceptDuration))         ||     // ..  Yes, early exit Acceptance Phase if we have exceeded the amount of time in Bulk by x-factor.
                                                                                                         //                                                                      --OR--
 
-                   (( workingParms.EXIT_ACPT_AMPS         >  0)                   &&                    // Is exiting by Amps enabled, and we have reached that threshold?
-                    ((shuntAmpsMeasured == true) || (usingEXTAmps == true))       &&                    //  ... and does it look like we are even measuring Amps?
-                    ( errorV                              >= 0)                   &&                    //  ... Also, make sure the low amps are not because the engine is idling, or perhaps a large external load
-                    ( persistentBatAmps                   <= (workingParms.EXIT_ACPT_AMPS * systemAmpMult)))  ) {       //  has been applied.  We need to see low amps at the appropriate full voltage!
+                    (( workingParms.EXIT_ACPT_AMPS         >  0)                   &&                    // Is exiting by Amps enabled, and we have reached that threshold?
+                     ((shuntAmpsMeasured == true) || (usingEXTAmps == true))       &&                    //  ... and does it look like we are even measuring Amps?
+                     ( atTargVoltage)                                              &&                    //  ... Also, make sure the low amps are not because the engine is idling, or perhaps a large external load
+                     ( persistentBatAmps                   <= (workingParms.EXIT_ACPT_AMPS * systemAmpMult)))  ) {       //  has been applied.  We need to see low amps at the appropriate full voltage!
 
 
 
@@ -1140,7 +1148,7 @@ void manage_ALT()  {
                 if (((enteredMills - altModeChanged) >= workingParms.EXIT_OC_DURATION) ||               // Have we have been in Overcharge Phase long enough?  --OR--
                     ( workingParms.LIMIT_OC_AMPS           == 0) ||                                     // Are we even configured to do OC mode? --OR--
                     ( workingParms.EXIT_OC_VOLTS           == 0) ||
-                    ( errorV                               >= 0)) {                                     // Did we reach the terminal voltage for Overcharge mode?
+                    ( atTargVoltage)) {                                                                 // Did we reach the terminal voltage for Overcharge mode?
 
                    set_ALT_mode(float_charge);                                                          // Yes to one of the conditions.  NOW we can go into Acceptance Phase
                    }
@@ -1339,18 +1347,18 @@ void manage_ALT()  {
                   (int)    measuredAltAmps,                                                             // Alternator Amps to 1/10th of an amp
                   frac2int(measuredAltAmps, 10),
 */
-                  'B',
+ /*                 'B',
                   (int)    measuredBatVolts,                                                            // Battery Voltage to 1/1000th of a volt
                   frac2int(measuredBatVolts, 1000),
                   (int)    measuredBatAmps,                                                             // Battery Amps to 1/10th of an amp
                   frac2int(measuredBatAmps, 10),
-
-/*                 'P',
-                  (int)    persistentBatVolts,                                                          // Battery Voltage to 1/1000th of a volt
-                  frac2int(persistentBatVolts, 1000),
-                  (int)    persistentBatAmps,                                                           // Battery Amps to 1/10th of an amp
-                  frac2int(persistentBatAmps, 10),
 */
+                 'P',
+                  (int)    persistentBatVolts,                                                          // Persistent Voltage to 1/1000th of a volt
+                  frac2int(persistentBatVolts, 1000),
+                  (int)    persistentBatAmps,                                                           // Persistent Amps to 1/10th of an amp
+                  frac2int(persistentBatAmps, 10),
+
 
 
                   usingEXTAmps,

@@ -45,14 +45,14 @@
 
 const CPS PROGMEM defaultCPS[MAX_CPES] = {
         //      Bulk/Accpt                  Overcharge                               Float                          Post Float              Equalization                    Temp Comp                   
-        {14.1, 6.0*3600000UL, 15,        0,  0.0,   0*3600000UL,        13.4,  -1, 0*3600000UL, -10,  0, 12.8,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.022*6/10, 15, -50, 125},  // #1 Default (safe) profile & AGM #1 (Low VOltage AGM).
-        {14.8, 3.0*3600000UL,  5,        0,  0.0,   0*3600000UL,        13.5,  -1, 0*3600000UL, -10,  0, 12.8,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.028*6/10, 15, -50, 125},  // #2 Standard FLA (e.g. Starter Battery, small storage)
-        {14.6, 4.5*3600000UL,  5,        0,  0.0,   0*3600000UL,        13.4,  -1, 0*3600000UL, -10,  0, 12.8,    0*3600000UL, 0.0, 0,    15.3,  0, 3.0*60000UL, 0,     0.028*6/10, 15, -50, 125},  // #3 HD FLA (GC, L16, larger)
-        {14.7, 4.5*3600000UL,  3,        0,  0.0,   0*3600000UL,        13.4,  -1, 0*3600000UL, -10,  0, 12.8,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.022*6/10, 15, -50, 125},  // #4 AGM #2 (Higher Voltage AGM)
-        {14.1, 6.0*3600000UL,  5,        0,  0.0,   0*3600000UL,        13.5,  -1, 0*3600000UL, -10,  0, 12.8,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.028*6/10, 15, -50, 125},  // #5 GEL
-        {14.0, 1.0*3600000UL, 15,        0,  0.0,   0*3600000UL,        13.1,  -1, 0*3600000UL,   0,  0,  0.0,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.000*6/10, 15, -50, 125},  // #6 RESERVED (place saver of very safe values)
-        {14.4, 6.0*3600000UL, 15,       15, 15.3, 3.0*3600000UL,        13.1,  -1, 0*3600000UL, -10,  0, 12.8,    0*3600000UL, 0.0, 0,    15.3,  0, 3.0*60000UL, 0,     0.028*6/10, 15, -50, 125},  // #7 4-stage HD LFA (+ Custom #1 changeable profile)  
-        {13.9, 1.0*3600000UL, 15,        0,  0.0,   0*3600000UL,        13.36,  0, 0*3600000UL,   0, 50, 13.3,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.000*6/10, 15,  32, 113}   // #8 LiFeP04        (+ Custom #2 changeable profile)
+        {14.1, 6.0*3600000UL, 15,        0,  0.0,   0*3600000UL,        13.4,  -1, 0*3600000UL, -10,  0, 12.8,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.004*6, -9, -45, 52},  // #1 Default (safe) profile & AGM #1 (Low VOltage AGM).
+        {14.8, 3.0*3600000UL,  5,        0,  0.0,   0*3600000UL,        13.5,  -1, 0*3600000UL, -10,  0, 12.8,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.005*6, -9, -45, 52},  // #2 Standard FLA (e.g. Starter Battery, small storage)
+        {14.6, 4.5*3600000UL,  5,        0,  0.0,   0*3600000UL,        13.4,  -1, 0*3600000UL, -10,  0, 12.8,    0*3600000UL, 0.0, 0,    15.3,  0, 3.0*60000UL, 0,     0.005*6, -9, -45, 52},  // #3 HD FLA (GC, L16, larger)
+        {14.7, 4.5*3600000UL,  3,        0,  0.0,   0*3600000UL,        13.4,  -1, 0*3600000UL, -10,  0, 12.8,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.004*6, -9, -45, 52},  // #4 AGM #2 (Higher Voltage AGM)
+        {14.1, 6.0*3600000UL,  5,        0,  0.0,   0*3600000UL,        13.5,  -1, 0*3600000UL, -10,  0, 12.8,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.005*6, -9, -45, 52},  // #5 GEL
+        {14.0, 1.0*3600000UL, 15,        0,  0.0,   0*3600000UL,        13.1,  -1, 0*3600000UL,   0,  0,  0.0,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.000*6, -9, -45, 52},  // #6 RESERVED (place saver of very safe values)
+        {14.4, 6.0*3600000UL, 15,       15, 15.3, 3.0*3600000UL,        13.1,  -1, 0*3600000UL, -10,  0, 12.8,    0*3600000UL, 0.0, 0,    15.3,  0, 3.0*60000UL, 0,     0.005*6, -9, -45, 52},  // #7 4-stage HD LFA (+ Custom #1 changeable profile)  
+        {13.9, 1.0*3600000UL, 15,        0,  0.0,   0*3600000UL,        13.36,  0, 0*3600000UL,   0, 50, 13.3,    0*3600000UL, 0.0, 0,     0.0,  0,   0*60000UL, 0,     0.000*6,  0,   0, 45}   // #8 LiFeP04        (+ Custom #2 changeable profile)
         };
 
                                                                 // Side note:  The Arduino programming environment will place the above populated table into EPROM during compile time.
@@ -69,9 +69,9 @@ const CPS PROGMEM defaultCPS[MAX_CPES] = {
                                                                 //
                                                                 //                      
                                                                 //                      
-                                                                //                      - Temps:   BAT_TEMP_1F_COMP is increased (multiplied) by battery scaling factor. 
+                                                                //                      - Temps:   BAT_TEMP_1C_COMP is increased (multiplied) by battery scaling factor. 
                                                                 //                                 As determined by auto-sensing the battery voltage via the RAW Atmel A/D port.
-                                                                //                                 e.g.:  at 48v system would multiply BAT_TEMP_1F_COMP above by 4
+                                                                //                                 e.g.:  at 48v system would multiply BAT_TEMP_1C_COMP above by 4
                                                                 //                                
                                                                 //              Entries that are NOT modified are:
                                                                 //                      - Temp Limits:  MIN_TEMP_COMP_LIMIT, BAT_MIN_CHARGE_TEMP  and  BAT_MAX_CHARGE_TEMP are not scaled.

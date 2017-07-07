@@ -47,7 +47,7 @@
 
 
 void check_inbound(void);
-void send_outbound(void);
+void send_outbound(boolean pushAll);
 int  frac2int (float frac, int limit);
  
 void prep_AST(char *buffer);

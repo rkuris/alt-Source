@@ -94,16 +94,15 @@ typedef struct CPS {                                            // Charging Prof
 
 
 
-   float         BAT_TEMP_1F_COMP;                              // Battery Temperature is compensated by this factor for every 1F temp change.  Note this is based off of BAT_TEMP_NOMINAL (77f)
-   int           MIN_TEMP_COMP_LIMIT;                           // If battery temperature falls below this value (in deg-F), limit temp compensation voltage rise to prevent overvoltage in very very cold places.
-   int           BAT_MIN_CHARGE_TEMP;                           // If Battery is below this temp (in deg-f), stop charging and force into Float Mode to protect it from under-temperature damage.
-   int           BAT_MAX_CHARGE_TEMP;                           // If Battery exceeds this temp (in deg-f),  stop charging and force into Float Mode to protect it from over-temperature damage.
+   float         BAT_TEMP_1C_COMP;                              // Battery Temperature is compensated by this factor for every 1C temp change.  Note this is based off of BAT_TEMP_NOMINAL (25c)
+   int           MIN_TEMP_COMP_LIMIT;                           // If battery temperature falls below this value (in deg-c), limit temp compensation voltage rise to prevent overvoltage in very very cold places.
+   int           BAT_MIN_CHARGE_TEMP;                           // If Battery is below this temp (in deg-c), stop charging and force into Float Mode to protect it from under-temperature damage.
+   int           BAT_MAX_CHARGE_TEMP;                           // If Battery exceeds this temp (in deg-c),  stop charging and force into Float Mode to protect it from over-temperature damage.
 
    } CPS;
 
 
-#define BAT_TEMP_NOMINAL                77                      // Nominal temp which .BAT_TEMP_1F_COMP is based around (in deg-F). 
-
+#define BAT_TEMP_NOMINAL    25                                  // Nominal temp which .BAT_TEMP_1C_COMP is based around (in deg-C). 
 
 extern const CPS  defaultCPS[MAX_CPES] PROGMEM;
 

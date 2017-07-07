@@ -56,7 +56,7 @@ float           CAN_RBM_voltsOffset;                                    // Snaps
 int             CAN_RBM_voPWMvalue;                                     // Snapshot of PWM value at time the remote voltage was received.  (Used to adjust the offset voltage based on changes in alternator output)
 uint16_t        CAN_RBM_dVdT;                                           // in mV/S
 unsigned long   CAN_RBM_voltsRefreshed;                                 // Time (millis) when all the Remote Battery Voltage was received.
-int             CAN_RBM_temp;                                           // Have we been sent a temperature?
+int             CAN_RBM_temp;                                           // Have we been sent a temperature (Deg-C)?
 unsigned long   CAN_RBM_tempRefreshed;                                  // Time (millis) the Remote Battery temperature was received.
 bool            ignoringRBM;                                            // Has the Remote Battery Master sent us something so unbelievable that we should ignore it??  
                                                                         // (Example, too large a deltaV between locally measured Voltage and the reported remote battery voltage?)  
@@ -79,11 +79,6 @@ unsigned long  CAN_HPUUCS_lastReceived = 0UL;                           // And l
 int            average_EPC_utilization;                                 // Noted average utilization of all of equal priority charging sourced on the same battery
 
 uint8_t CAN_ASCII_source = 0;                                           // If we are receiving ASCII characters via the CAN, this is the ID of who sent them. (0 = No one is sending us anything)
-int     CAN_ASCII_recieved_count = 0;                                   // This is how many characters they sent in the last packet  (0 = no characters have been received)
-char    CAN_ASCII_recieved_characters[8];                               // And here they are!  (Note, there is no \0 termination in this 'string' - look at the count.)
-char    CANCharBuffer[OUTBOUND_BUFF_SIZE+1];                            // If someone wants to send out a string to the CAN_ASCII_SOURCE node, place that string here
-int     CANCharBuffIndex = 0;                                           //   This contains which character in that buffer should be sent next.
-                                                                        // Note this buffer is very simple, no FIO, just a simple buffer.  Any new string placed in the buffer will overwrite the old one, even if not completed.
                                                                          
 
 
@@ -106,6 +101,17 @@ uint8_t        chargerSBLP[SBSZ];                                       // Bit =
                                                                         
 
 
+    //-- Queues to hold the J1939 - TERMIANAL sending and receiving characters.
+#define cASCII_RX_BUFFER_SIZE  9                                        // Am using simple FiFo which has roaming 'unused' spot - trades off one byte of RAM for simpler code size.
+#define cASCII_TX_BUFFER_SIZE  500                                      // Large enough to hold all status strings at one time..
+
+uint8_t    _rx_buffer_head = 0;                                         //  We expect to only recevie (and have to deal with) 8 up to 8 characters at a time...
+uint8_t    _rx_buffer_tail = 0;
+uint16_t   _tx_buffer_head = 0;                                         // Sending buffer however can be rather large, esp when user asked for all-status strings!
+uint16_t   _tx_buffer_tail = 0;
+
+char        _cASCII_rx_buffer[cASCII_RX_BUFFER_SIZE];
+char        _cASCII_tx_buffer[cASCII_TX_BUFFER_SIZE];
 
 
 
@@ -412,7 +418,7 @@ void N2kBatConf_message(void){
     else if (systemVoltMult < 3.6)       N2kBatNomVolt = N2kDCbnv_42v;
     else                                 N2kBatNomVolt = N2kDCbnv_48v;                      // We do not support anything greater then a 48v system...
 
-    SetN2kBatConf(N2kMsg,batteryInstance,N2kBatType,N2kBatEqSupport,N2kBatNomVolt,N2kBatChem,AhToCoulomb(500*systemAmpMult),workingParms.BAT_TEMP_1F_COMP,0,0);
+    SetN2kBatConf(N2kMsg,batteryInstance,N2kBatType,N2kBatEqSupport,N2kBatNomVolt,N2kBatChem,AhToCoulomb(500*systemAmpMult),workingParms.BAT_TEMP_1C_COMP,0,0);
     NMEA2000.SendMsg(N2kMsg);
  }
 
@@ -439,7 +445,7 @@ void N2kDCBatStatus_message(void){
     if (measuredBatTemp == -99)
         batTempK = N2kDoubleNA;                                         // Temperatures are not available.
     else
-        batTempK = FToKelvin((double)measuredBatTemp);
+        batTempK = CToKelvin((double)measuredBatTemp);
 
 
     SetN2kDCBatStatus(N2kMsg,batteryInstance,(double)measuredBatVolts,(double)measuredBatAmps,batTempK,SID);
@@ -519,7 +525,7 @@ void RVCDCStatus2_message(void){
         if (measuredBatTemp == -99)  
            tempSend = N2kInt16NA;                                  // Temperature is not available.
         else 
-           tempSend = (int16_t) ((float)(measuredBatTemp - 32) * (5.0/9.0) * 32.0);
+           tempSend = measuredBatTemp * 0.03125;
 
 
         uint8_t SOC;
@@ -774,7 +780,7 @@ void RVCChrgStat2_message(void){
                                      canConfig.DEVICE_PRIORITY,
                                      (uint16_t)(measuredAltVolts * 20.0),
                                      Adc,
-                                    (int8_t) ((float)(measuredFETTemp - 32) * (5.0/9.0) * 32.0));
+                                    (int8_t) measuredFETTemp);
                                       
         NMEA2000.SendMsg(N2kMsg);
 
@@ -843,7 +849,7 @@ void RVCChrgConfig2_message(void){
                                100, 
                                N2kUInt8NA, 
                                N2kUInt8NA, 
-                               (uint8_t)  ((BAT_TEMP_NOMINAL - 32) * 5/9), 
+                               (uint8_t)  (BAT_TEMP_NOMINAL), 
                                (uint16_t) (workingParms.FLOAT_TO_BULK_VOLTS * systemVoltMult *  20.0));
     NMEA2000.SendMsg(N2kMsg);
 }
@@ -868,7 +874,7 @@ void RVCChrgConfig3_message(void){
                                (uint16_t) (workingParms.ACPT_BAT_V_SETPOINT  * systemVoltMult *  20.0), 
                                (uint16_t) (workingParms.ACPT_BAT_V_SETPOINT  * systemVoltMult *  20.0), 
                                (uint16_t) (workingParms.FLOAT_BAT_V_SETPOINT * systemVoltMult *  20.0), 
-                               (uint8_t)   workingParms.BAT_TEMP_1F_COMP);
+                               (uint8_t)   workingParms.BAT_TEMP_1C_COMP);
     NMEA2000.SendMsg(N2kMsg);
 }
 
@@ -891,7 +897,7 @@ void RVCChrgConfig4_message(void){
                                (uint16_t) (65530), 
                                (uint16_t) (workingParms.EXIT_ACPT_DURATION  / 1000), 
                                (uint16_t) (workingParms.EXIT_FLOAT_DURATION / 1000), 
-                               (uint8_t)   workingParms.BAT_TEMP_1F_COMP);
+                               (uint8_t)   workingParms.BAT_TEMP_1C_COMP);
     NMEA2000.SendMsg(N2kMsg);
 }
 
@@ -952,24 +958,54 @@ void RVCChrgEqualConfig_message(void){
                         */
 void RVCTerminal_message(void){
     tN2kMsg   N2kMsg;
-    int count;
-
+    int count, i;
+    char buff[8];
+  
     if (canConfig.ENABLE_OSE == false)  return;                                                 // User has disabled RV-C messages, perhaps due to conflict in the system.
-    
-    if ((CAN_ASCII_source != 0)  && (CANCharBuffIndex != 0)) {
-        count = min(CANCharBuffIndex, 8);                                                       // Send up to 8 characters at a time.
-        SetRVCPGNTerminal(N2kMsg, CAN_ASCII_source, count, &CANCharBuffer[CANCharBuffIndex-1]);
-        NMEA2000.SendMsg(N2kMsg);
 
-        CANCharBuffIndex -= count;        
-    } else {
-        CAN_ASCII_source = 0;                                                                   // We have finished sending out any requested communications.  Reset the requests ID to an 'idle' state.
-        CAN_ASCII_recieved_count = 0;                                                           // And there is nothing interesting in the buffer to look at.
+    if (_tx_buffer_head == _tx_buffer_tail) {                                                   // Is there an ASCII string we need to push out in a CAN wrapper?
+        CAN_ASCII_source = 0;                                                                   // No, buffer is empty.  We have finished sending out any requested communications. 
+                                                                                                // Reset the requests ID to an 'idle' state.
+        }
+    else {
+
+        count = 0;
+        while ((_tx_buffer_head != _tx_buffer_tail) && (count < 8)) {                           // Pull up to 8 characters from the buffer to send.
+            buff[count]     = _cASCII_tx_buffer[_tx_buffer_tail];
+            count++;
+            _tx_buffer_tail = (_tx_buffer_tail + 1) % cASCII_TX_BUFFER_SIZE;
+            }
+
+
+        SetRVCPGNTerminal(N2kMsg, CAN_ASCII_source, count, buff);
+        NMEA2000.SendMsg(N2kMsg);
     }
 
 }
 
 
+
+
+//----------------------------------------------------------------------------------------------------------
+//  CAN ASCII Write 
+// 
+//      Places the passed string into the CAN-Terminal queue.  Note there is no check for overruns, so if the head
+//      overtakes the tail, data will be overwritten.
+//
+//
+void CAN_ASCII_write(char *stng) {
+    int i;
+
+    if (CAN_ASCII_source == 0)  return;                                                         // No one sent us anything, so there is nothing to send back.
+
+    i = 0;
+    while (stng[i] != 0) {
+        _cASCII_tx_buffer[_tx_buffer_head] = stng[i];
+        i++;
+        _tx_buffer_head = (_tx_buffer_head + 1) % cASCII_TX_BUFFER_SIZE;
+        };
+
+}
 
 
 
@@ -1142,7 +1178,7 @@ void N2kDCBatStatus_handler(const tN2kMsg &N2kMsg){                             
         
         CAN_RAT2000_lastReceived = millis();                                                // Well then, lets note what time we got this information  (Will be used later in resolve_BAT_VoltAmpTemp();  )
         CAN_RAT2000_amps         = RATbatAmps;                                              //  tuck away the reported battery current.  (Also used later in resolve_BAT_VoltAmpTemp();  )
-        CAN_RAT2000_temp         = (int) KelvinToF(RATBatTempK);                            // Convert battery temp to unit type we use.
+        CAN_RAT2000_temp         = (int) (RATBatTempK + 273.15);                            // Convert battery temp to unit type we use.
         }
     }
 }
@@ -1257,11 +1293,11 @@ void RVCDCStatus2_handler(const tN2kMsg &N2kMsg){                               
         validate_CAN(instance, devPri, N2kMsg.Source, FLAG_DC2)) {                          // Is it from someone we should be listing to?
 
         if ((CAN_RBM_sourceID == N2kMsg.Source) &&  (sourceTemp != N2kInt16NA)) {           // Is this THE Remote Battery Master we are listing to?   And did they care to tell us the battery temperature?
-          CAN_RBM_temp = (int)((float)sourceTemp * (9.0/5.0) * 0.03125) + 32;               // They did!
+          CAN_RBM_temp = (int)((float)sourceTemp / 0.03125);                                // They did!
           CAN_RBM_tempRefreshed = millis();
         }
         else
-          CAN_RBM_temp = -99;                                                               // signal that nothing valid has come from a RBM
+          CAN_RBM_temp = -99;                                                                // signal that nothing valid has come from a RBM
     }    
 }
 
@@ -1528,19 +1564,69 @@ void RVCDCDisconnectCommand_handler(const tN2kMsg &N2kMsg){                     
 //*****************************************************************************
 void RVCTerminal_handler(const tN2kMsg &N2kMsg){                                            // Someone is sending us an ASCII text string!
 
+    int count;
+
     if (canConfig.ENABLE_OSE == false)  return;                                             // User has disabled RV-C messages, perhaps due to conflict in the system.  So we are not sure this is REALLY an RV-C message
+ 
+    if (ParseRVCPGNTerminal(N2kMsg, CAN_ASCII_source, count, _cASCII_rx_buffer)) {           // We can only handle one-packet at a time, so go ahead directly copy the CAN message into out local Rx buffer
+        _rx_buffer_tail = 0;
+        _rx_buffer_head = count;
+    } else {
+        CAN_ASCII_source = 0;                                                               // If it was not a valid message, clear the flag that anyone is talking to us via ASCII
+        }
+}
+
+
+
+
+
+//----------------------------------------------------------------------------------------------------------
+//  CAN ASCII Read 
+// 
+//      If a character is available in the CAN termianl inbound queue, returns it.  Returns -1 if no character is available
+//
+//
+//
+int CAN_ASCII_read(void) {
 
  
-    if (!ParseRVCPGNTerminal(N2kMsg, CAN_ASCII_source, CAN_ASCII_recieved_count, CAN_ASCII_recieved_characters)) {
-        CAN_ASCII_source = 0;                                                               // If it was not a valid message, clear the flag that anyone is talking to us via ASCII
-        CAN_ASCII_recieved_count = 0;                                                       // And there is nothing interesting in the buffer to look at.
-    }
+  if (_rx_buffer_head == _rx_buffer_tail) {                                         // Head = tail --> queue is empty.
+    return -1;
+  } else {
+     char c = _cASCII_rx_buffer[_rx_buffer_tail];
+    _rx_buffer_tail = (_rx_buffer_tail + 1) % cASCII_RX_BUFFER_SIZE;
+    return c;
+  }
 
 }
 
 
 
+//----------------------------------------------------------------------------------------------------------
+//  CAN ASCII Available 
+// 
+//      Returns how many characters are avaialbe in the inbound  CAN Terminal buffer.  
+//      Returns 0 if none.
+//
+//
+//
+int CAN_ASCII_available(void) {
+
+ return ((unsigned int)(cASCII_RX_BUFFER_SIZE + _rx_buffer_head - _rx_buffer_tail)) % cASCII_RX_BUFFER_SIZE;
+
+}
+
+
 #endif              /***  #ifdef SUPPORT_RVC   ***/
+
+
+
+
+
+
+
+
+
 
 
 //------------------------------------------------------------------------------------------------------

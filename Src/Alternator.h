@@ -50,11 +50,7 @@ typedef enum  tModes {unknown, disabled, FAULTED, FAULTED_REDUCED_LOAD,         
 
 typedef struct  {                                               // System Configuration Structure
 
-   bool         FAVOR_32V_redact;                               // It is impossible to auto-define a 32v system from a 24v system just from the battery voltage, as their
-                                                                // expected ranges overlap. (there is also a small overlap with 48v batteries).
-                                                                // This flag will FORCE clarification by favoring a 32v system over a 24v (and 48v) when there is Ambiguity.  See startup()
-
-   bool         REVERSED_SHUNT;                                 // Is the AMP Shunt wired up backwards?  If so, this Flag will invert the readings via Software.                
+    bool         REVERSED_SHUNT;                                 // Is the AMP Shunt wired up backwards?  If so, this Flag will invert the readings via Software.                
                                                                 //------  Default values for Alternator Goals (Amps, temp, etc..)
    uint8_t      ALT_TEMP_SETPOINT;                              // Temp range we want the Alternator to run at (max). Anything above it, start backing off Alternator Field drive.
    float        ALT_AMP_DERATE_NORMAL;                          // In normal operation, run the Alternator this % of it  demonstrated max capability
@@ -110,7 +106,7 @@ typedef struct  {                                               // System Config
                                                                 // and set to a value just before Amps are produced by the alternator.  Set = 0 to disable Tach mode, independent of the DIP switch.
 
 
-
+   bool         FORCED_TM;                                      // Has user Forced on Tach-mode via the $SCT command
 
 
    bool         USE_BT;                                         // User configurable, Use or Disable Bluetooth for this module?  
