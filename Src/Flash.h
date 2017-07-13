@@ -67,16 +67,16 @@ void commit_EEPROM(void);
 
                 //-----  EEPROM is laid out in this way:  (I was not able to get #defines to work, as the preprocessor seems to not be able to handle sizeof() )
                 //       CAL is placed 1st in hopes it will not be invalidated as revs change.
+                //          Note the addition of a 32 byte 'reserved' space, for future use.
 
                 
                 
 
 #define  EKEY_FLASH_LOCAITON  0
 #define  CAL_FLASH_LOCAITON  (sizeof(EKEY))
-#define  CPS_FLASH_LOCAITON  (sizeof(EKEY) + sizeof(CAL) + (sizeof(CPS)*index))
-#define  SCS_FLASH_LOCAITON  (sizeof(EKEY) + sizeof(CAL) + (sizeof(CPS)*MAX_CPES)) 
-#define  CCS_FLASH_LOCAITON  (sizeof(EKEY) + sizeof(CAL) + (sizeof(CPS)*MAX_CPES)  + sizeof(SCS))
-
+#define  CPS_FLASH_LOCAITON  (sizeof(EKEY) + sizeof(CAL) + 32 + (sizeof(CPS)*index))               
+#define  SCS_FLASH_LOCAITON  (sizeof(EKEY) + sizeof(CAL) + 32 + (sizeof(CPS)*MAX_CPES)) 
+#define  CCS_FLASH_LOCAITON  (sizeof(EKEY) + sizeof(CAL) + 32 + (sizeof(CPS)*MAX_CPES)  + sizeof(SCS))
 
 
                                                             

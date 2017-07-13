@@ -505,7 +505,7 @@ typedef uint32_t prog_uint32_t;
 #define PID_I_WINDUP_CAP             0.9                // Capping value for the 'I' factor in the PID engines.  I is not allowed to influence the PWM any more then this limit 
                                                         // to prevent 'integrator Runaway' 
 
-#define PID_VOLTAGE_SENS            0.040               // When looking at mode transitions, if we come within 40mV of the target voltage (for rep 12v battery), consider we have 'met' that voltage condtion.
+#define PID_VOLTAGE_SENS            0.030               // When looking at mode transitions, if we come within 30mV of the target voltage (for rep 12v battery), consider we have 'met' that voltage condtion.
 
 
                                                           

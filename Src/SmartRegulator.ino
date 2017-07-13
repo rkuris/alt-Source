@@ -64,7 +64,8 @@
 //
 //
 //
-//      xx/xx/2017  v1.0.3      Removed 'Favor-32v' flag and 32v autoselect, hold in preramp state if we are receiving ASCII config commands.
+//      07/13/2017  v1.1.0      Removed 'Favor-32v' flag and 32v autoselect, hold in preramp state if we are receiving ASCII config commands.
+//                              Changed from Deg F to Deg C, added Tach-mode flag to $SCT:, added PID_VOLTAGE_SENS (margin, better support of small alternators + large bats)
 //      05/15/2017  v1.0.2      Remember assigned CAN node ID, corrected Amp-shunt cal
 //      01/28/2017  v1.0.1      Revised SST; to place version number at beginning of string.
 //      01/25/2017  v1.0.0      Add support for CAN enabled version of regulator, corrected "$SCO:" command not recognized. Improved auto idle detection and idle field pull-back formula,

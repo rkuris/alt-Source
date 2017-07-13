@@ -97,9 +97,9 @@ bool fill_ib_buffer(){
                 break;
                 }
 
-            if((c == '\r') || (c == '@')){                              // Did we find the termination character? ('@' for BUG in Arduino IDE, will not send CR\LF, so 'fake it' using @)
+            if((c == '\n') || (c == '@')){                              // Did we find the termination character? ('@' for BUG in Arduino IDE, will not send CR\LF, so 'fake it' using @)
                 if (ibIndex < 3) {                                      // If terminator is found before the command string is AT LEAST 4 characters in length, something is wrong.  
-                    ibBufFilling = false;                              // ALL valid commands are in form of xxx:, so must be at least 4 characters long.  So, abandon this and start over.
+                    ibBufFilling = false;                               // ALL valid commands are in form of xxx:, so must be at least 4 characters long.  So, abandon this and start over.
                     break;
                     }
 
@@ -118,9 +118,9 @@ bool fill_ib_buffer(){
    if ((ibBufFilling == true) && (IB_BUFF_FILL_TIMEOUT != 0UL) &&       //  Have we timed-out waiting for a complete command string to be send to us?
        ((millis() - ibBufFillStarted) > IB_BUFF_FILL_TIMEOUT)) {
         ibBufFilling = false;                                           //  Yes, abort this and start looking for a new command initiator character ('$')
-#ifdef SYSTEMCAN
-        CAN_ASCII_source = 0;                                           // And also reset the CAN terminal ID to Idle mode - something has gotten out of sync and they need to start over..
-#endif
+        #ifdef SYSTEMCAN
+           CAN_ASCII_source = 0;                                        // And also reset the CAN terminal ID to Idle mode - something has gotten out of sync and they need to start over..
+            #endif
        }
 
    return (false);                                                      // We have read all there is in the Serial queue, so go back and try to get the rest later.
@@ -206,6 +206,7 @@ void check_inbound()  {
 
             #ifdef SYSTEMCAN
               CAN_ASCII_write(charBuffer);                              //  Send this vai a a CAN-wrapper as well (if someone from the CAN asked for it!)
+              CAN_ASCII_source = 0;                                     // And we are all done pushing things into the CAN buffer until we are asked for something more.
               #endif  
 
             return;
@@ -631,6 +632,7 @@ void send_AOK(void) {
     
     #ifdef SYSTEMCAN
       CAN_ASCII_write("AOK;\r\n");                                      // And CAN wrapper incase they are the one who asked for it.
+      CAN_ASCII_source = 0;                                             // And we are all done pushing things into the CAN buffer until we are asked for something more.
       #endif  
   }
 
