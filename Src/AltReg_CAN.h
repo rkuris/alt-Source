@@ -71,7 +71,7 @@ typedef struct CCS {                                            // CAN Configura
 
 #define REMOTE_CAN_RAT2000_TIMEOUT   2000UL                             // An optional NMEA2000 based Remote Amp and Temp device SHOULD talk every 666mS, lets give them 2 seconds.
 
-#define REMOTE_CAN_LPCS_TIMEOUT       750UL                             //  Likewise, if we do not hear from any Lower Priority Charging Sources . . figure WE are it.
+#define REMOTE_CAN_LPCS_TIMEOUT      7500UL                             //  Likewise, if we do not hear from any Lower Priority Charging Sources . . figure WE are it.
 #define REMOTE_CAN_HPUUCS_TIMEOUT    7500UL                             // Charger Status 1 (which has utilization %) comes every 5000mS..
 
 #define RBM_REMASTER_IDLE_PERIOD    2 * REMOTE_CAN_MASTER_STABILITY     // When looking to establish a new RMB, wait at least 2x the stability timeout period.  To give some time for network errors to clear
