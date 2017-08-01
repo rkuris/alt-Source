@@ -39,7 +39,7 @@
 #define INBOUND_BUFF_SIZE            60                 // Size of input command buffer (CAUTION:  250 -- 8-bit indexes are used)
 #define OUTBOUND_BUFF_SIZE          200                 // Large Outbound buffer, make sure we do not overrun (Primarily CPE;)(CAUTION:  250 -- 8-bit indexes are used)
 #define IB_BUFF_FILL_TIMEOUT     60000UL                // If a complete 'command' string is not received within 60 seconds, abort it.  Set = 0 to disable this feature.
-#define SDM_SENSITIVITY              1 // 10                 // Send Debug Material:  only update the Serial Port with debug info every 10 times through. 
+#define SDM_SENSITIVITY              10                 // Send Debug Material:  only update the Serial Port with debug info every 10 times through. 
                                                         // (Set = 1 for max updates, max value 126)
 
 
@@ -47,7 +47,7 @@
 
 
 void check_inbound(void);
-void send_outbound(boolean pushAll);
+void send_outbound(bool pushAll);
 int  frac2int (float frac, int limit);
  
 void prep_AST(char *buffer);

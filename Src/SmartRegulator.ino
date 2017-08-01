@@ -64,6 +64,7 @@
 //
 //
 //
+//      xx/xx/2017  v1.1.1      asdf //!! HEY!!     
 //      07/13/2017  v1.1.0      Removed 'Favor-32v' flag and 32v autoselect, hold in preramp state if we are receiving ASCII config commands.
 //                              Changed from Deg F to Deg C, added Tach-mode flag to $SCT:, added PID_VOLTAGE_SENS (margin, better support of small alternators + large bats)
 //      05/15/2017  v1.0.2      Remember assigned CAN node ID, corrected Amp-shunt cal

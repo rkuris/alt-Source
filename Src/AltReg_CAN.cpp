@@ -1,4 +1,3 @@
-
 //      AltReg_CAN.C
 //
 //      Copyright (c) 2016, 2017 by William A. Thomason.      http://arduinoalternatorregulator.blogspot.com/
@@ -158,6 +157,7 @@ char        _cASCII_tx_buffer[cASCII_TX_BUFFER_SIZE];
     void RVCChrgConfig4_message(void);
     void RVCChrgEqualStat_message(void);
     void RVCChrgEqualConfig_message(void);
+    void RVCProdId_message(void);
     void RVCTerminal_message(void);
     void ISODiagnostics_message(void);
     void ISODiagnosticsER_message(void);
@@ -186,6 +186,7 @@ char        _cASCII_tx_buffer[cASCII_TX_BUFFER_SIZE];
         {0x1FEBF,&sendNAK_handler,      &RVCChrgConfig4_message,     0,false},
         {0x1FF99, NULL,                 &RVCChrgEqualStat_message,5000,false},
         {0x1FF98,&sendNAK_handler,      &RVCChrgEqualConfig_message, 0,false},
+        {0xFEEB,  NULL,                 &RVCProdId_message,          0,false},
         {0x17E00,&RVCTerminal_handler,  &RVCTerminal_message,       50,false},        // Terminal handler called every 50mS to send out 'Next portion' of string.
         #endif
             // J1939 type messages we need to handle.
@@ -270,7 +271,7 @@ bool initialize_CAN(void) {
 void reset_BIT_arrarys(void) {
     int i;
     
-    for (i = 0; i++; i < SBSZ) {
+    for (i = 0; i < SBSZ; i++) {
         chargerSBHP[i] = 0x00;
         chargerSBEP[i] = 0x00;
         chargerSBLP[i] = 0x00;
@@ -478,7 +479,6 @@ void RVCDCStatus1_message(void){
     tN2kMsg   N2kMsg;
     uint32_t  Adc;
 
-      if (canConfig.ENABLE_OSE == false)  return;                                         // User has disabled RV-C messages, perhaps due to conflict in the system.
 
       if ((shuntAmpsMeasured == false) || (canConfig.SHUNT_AT_BAT == false))              // Even if we ARE actively charging, but
           Adc = N2kUInt32NA;                                                              //   .. have no idea what the battery current is
@@ -491,6 +491,7 @@ void RVCDCStatus1_message(void){
                                     Adc);
                                     
       NMEA2000.SendMsg(N2kMsg);
+    }
 
 }
 
@@ -498,7 +499,7 @@ void RVCDCStatus1_message(void){
 
 void RVCDCStatus1OA_message(void){
 
-   if ((CAN_weAreRBM) && (measuredBatAmps > targetAltAmps))                                 // Special 100mS message when over target  (OA --> Over Amps)
+   if (measuredBatAmps > targetAltAmps)                                                     // Special 100mS message when over target  (OA --> Over Amps)
         RVCDCStatus1_message();                                                             // For current, just use the standard CAN priority, no need to raise its priority.
         
 }
@@ -946,6 +947,46 @@ void RVCChrgEqualConfig_message(void){
 
 
 
+/*****************************************************************************
+                        // Product Identificaiton -  FEEBh
+                        // Input:
+                        //  - 8-bit single-byte coded graphic character text, with four field delimited by "*"
+                        //    Field 1: Make
+                        //    Field 2: Model
+                        //    Field 3: Serial number
+                        //    Field 4: Unit number (for products where the RV-C node is separate from the mechanical unit.)
+                        */
+
+void RVCProdId_message(void) {
+    tN2kMsg   N2kMsg;
+    char      buff[OUTBOUND_BUFF_SIZE+1];
+    int       cnt;
+    
+    if (canConfig.ENABLE_OSE == false)  return;                                                 // User has disabled RV-C messages, perhaps due to conflict in the system.
+
+
+    cnt = snprintf_P(buff, OUTBOUND_BUFF_SIZE, PSTR("***%i*"),
+                           canConfig.DEVICE_INSTANCE);
+
+    if (cnt <= 8) {                                                                             // We can pack this into a single message
+ 
+        N2kMsg.SetPGN(65259L);
+        N2kMsg.Priority=6;
+        for (int i=0; i<cnt; i++)
+              N2kMsg.AddByte(buff[i]);  
+          
+        NMEA2000.SendMsg(N2kMsg);       
+
+    } else {
+
+        // ERROR, we need to send multi-packet message -- need to add code here for that once we start putting in more details into the string.
+        //!! HEY!! Need to handle this multi-byte message thing!
+    }
+
+
+
+
+}
 
 
 
@@ -958,7 +999,7 @@ void RVCChrgEqualConfig_message(void){
                         */
 void RVCTerminal_message(void){
     tN2kMsg   N2kMsg;
-    int count, i;
+    int count;
     char buff[8];
   
     if (canConfig.ENABLE_OSE == false)  return;                                                 // User has disabled RV-C messages, perhaps due to conflict in the system.

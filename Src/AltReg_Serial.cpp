@@ -653,7 +653,7 @@ void send_AOK(void) {
 //------------------------------------------------------------------------------------------------------
 
 
-void  send_outbound(boolean pushAll) {
+void  send_outbound(bool pushAll) {
     char    charBuffer[OUTBOUND_BUFF_SIZE+1];                                                       // Large working buffer to assemble strings before sending to the serial port.
     uint8_t i, j;
     unsigned long static lastStatusSent = 0U;                                                        // When was the Status last sent?
@@ -711,7 +711,7 @@ void  send_outbound(boolean pushAll) {
 
 
 //------------------------------------------------------------------------------------------------------
-// Preg Outbound strings 
+// Prep Outbound strings 
 //
 //      These functions will assemble the outbound strings into the passed buffer.
 //      Note that the passed buffer MUST BE AT LEAST 'OUTBOUND_BUFF_SIZE' in size.
