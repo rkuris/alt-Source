@@ -479,6 +479,7 @@ void RVCDCStatus1_message(void){
     tN2kMsg   N2kMsg;
     uint32_t  Adc;
 
+    if (CAN_weAreRBM && canConfig.ENABLE_OSE) {                                          // Only send of we are the RBM and user has enabled RV-C messages.
 
       if ((shuntAmpsMeasured == false) || (canConfig.SHUNT_AT_BAT == false))              // Even if we ARE actively charging, but
           Adc = N2kUInt32NA;                                                              //   .. have no idea what the battery current is
@@ -946,7 +947,6 @@ void RVCChrgEqualConfig_message(void){
 
 
 
-
 /*****************************************************************************
                         // Product Identificaiton -  FEEBh
                         // Input:
@@ -987,6 +987,7 @@ void RVCProdId_message(void) {
 
 
 }
+
 
 
 
