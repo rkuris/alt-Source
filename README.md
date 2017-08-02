@@ -10,3 +10,10 @@ the board type needed for your regulator:
 - 3rd Generation
    Board type: 16MHz xtal ATmega64M1
    https://github.com/thomasonw/ATmegaxxM1-C1
+
+
+-------
+Note that the nature of github allows for both complete releases, as well as changes along the way towards a new complete release.
+
+To access the full / complete release, click on the `Release` tab above, or here: 
+ https://github.com/AlternatorRegulator/alt-Source/releases
