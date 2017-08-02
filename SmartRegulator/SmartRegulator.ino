@@ -118,6 +118,7 @@
 #include "CPE.h"
 #include "AltReg_Serial.h"
 #include "Alternator.h"
+#include "Types.h"
 #include "Sensors.h"
 #include "AltReg_CAN.h"
 

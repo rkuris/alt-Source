@@ -26,6 +26,7 @@
 
 #include <Arduino.h>
 #include "Config.h"                                               // Pick up the specific structures and their sizes for this program.
+#include "Types.h"
 #include "Sensors.h"
 #include "CPE.h"   
 #include "Alternator.h"

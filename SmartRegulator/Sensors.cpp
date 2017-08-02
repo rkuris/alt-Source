@@ -20,6 +20,7 @@
 //
 
 #include "Config.h"
+#include "Types.h"
 #include "Sensors.h"
 #include "Alternator.h"
 #include "AltReg_CAN.h"

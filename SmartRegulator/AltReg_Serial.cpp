@@ -22,6 +22,7 @@
 #include "Config.h"
 #include "AltReg_Serial.h"
 #include "Alternator.h"
+#include "Types.h"
 #include "Sensors.h"
 #include "Flash.h"
  
@@ -46,7 +47,6 @@ bool getByte(char *buffer, uint8_t *dest, uint8_t LLim, uint8_t HLim);
 bool getDuration(char *buffer, unsigned long *dest,  int HLim);
 bool getFloat(char *buffer, float *dest, float LLim, float HLim);
 bool getBool(char *buffer, bool *dest);
-int  frac2int (float frac, int limit);
 void append_string(char *dest, const char *src, int n);
 void send_AOK(void);
 
@@ -723,21 +723,17 @@ void  send_outbound(bool pushAll) {
 
 void prep_AST(char *buffer) {                                                           // Assembled the Alternator Status ASCII string.  Pass in working buffer of BUFF_SIZE
                                                                                         //  Alternator STatus - sent very often
-    snprintf_P(buffer,OUTBOUND_BUFF_SIZE, PSTR("AST;,%d.%02d, ,%d.%02d,%d.%01d,%d.%01d,%d, ,%d.%02d,%d,%d,%d, ,%d,%d, ,%d, ,%d.%02d,%d,%d,%d\r\n"),
+    snprintf_P(buffer,OUTBOUND_BUFF_SIZE, PSTR("AST;,%d.%02d, ,%s,%s,%s,%d, ,%s,%d,%d,%d, ,%d,%d, ,%d, ,%s,%d,%d,%d\r\n"),
         (int)  (generatorLrRunTime / (3600UL * 1000UL)),                                // Runtime Hours
         (int) ((generatorLrRunTime / (3600UL * 10UL  )) % 100),                         // Runtime 1/100th
 
-        (int)    measuredBatVolts,                                                      // Battery Voltage to 1/100th of a volt
-        frac2int(measuredBatVolts,100),
-        (int)    measuredAltAmps,                                                       // Alternator Amps to 1/10th of an amp
-        frac2int(measuredAltAmps,10), 
-        (int)    measuredBatAmps,                                                       // User supplied Offset Amps to 1/10th of an amp
-        frac2int(measuredBatAmps,10),  
+	floatString(measuredBatVolts, 2),
+	floatString(measuredAltAmps, 1),
+	floatString(measuredBatAmps, 1),
         measuredAltWatts, 
 
         
-        (int)    targetBatVolts,
-        frac2int(targetBatVolts,100),
+	floatString(targetBatVolts, 2),
         (int)    targetAltAmps,
         targetAltWatts,
         alternatorState,
@@ -748,9 +744,7 @@ void prep_AST(char *buffer) {                                                   
 
         measuredRPMs,
         
-
-        (int)     measuredAltVolts,                                                     // Alternator Voltage to 1/100th of a volt
-        frac2int (measuredAltVolts,100),
+	floatString(measuredAltVolts, 2),
         measuredFETTemp,
         measuredFieldAmps,
         ((100*fieldPWMvalue) / FIELD_PWM_MAX) );
@@ -760,43 +754,36 @@ void prep_AST(char *buffer) {                                                   
 
 
 void prep_CPE(char *buffer, CPS  *cpsPtr, int index) {                     
-   snprintf_P(buffer,OUTBOUND_BUFF_SIZE, PSTR("CPE;,%d,%d.%02d,%d,%d,%d, ,%d,%d,%d.%02d,%d, ,%d.%02d,%d,%d,%d,%d,%d.%02d, ,%d,%d.%02d,%d, ,%d.%02d,%d,%d,%d, ,%d.%03d,%d,%d,%d\r\n"),
+   snprintf_P(buffer,OUTBOUND_BUFF_SIZE, PSTR("CPE;,%d,%s,%d,%d,%d, ,%d,%d,%s,%d, ,%s,%d,%d,%d,%d,%s, ,%d,%s,%d, ,%s,%d,%d,%d, ,%s,%d,%d,%d\r\n"),
                         (index + 1),                                                                        // Convert from "0-origin" of array indexes for display
-        (int)            cpsPtr->ACPT_BAT_V_SETPOINT,
-         frac2int       (cpsPtr->ACPT_BAT_V_SETPOINT,100),
+			floatString(cpsPtr->ACPT_BAT_V_SETPOINT, 2),
         (unsigned int)  (cpsPtr->EXIT_ACPT_DURATION/60000UL),                                               // Show time running in Minutes, as opposed to mS
                          cpsPtr->EXIT_ACPT_AMPS,
         (int)             0,                                                                                // Place holder for future dV/dT exit parameter, hard coded = 0 for now.
 
                          cpsPtr->LIMIT_OC_AMPS,
         (unsigned int)  (cpsPtr->EXIT_OC_DURATION/60000UL),
-        (int)            cpsPtr->EXIT_OC_VOLTS,
-        frac2int        (cpsPtr->EXIT_OC_VOLTS,100),
+			floatString(cpsPtr->EXIT_OC_VOLTS, 2),
         (int)            0,                                                                                 // Place holder for future dV/dT exit parameter, hard coded = 0 for now.
 
 
-        (int)            cpsPtr->FLOAT_BAT_V_SETPOINT,
-        frac2int        (cpsPtr->FLOAT_BAT_V_SETPOINT, 100),
+	floatString(cpsPtr->FLOAT_BAT_V_SETPOINT, 2),
                          cpsPtr->LIMIT_FLOAT_AMPS,
         (unsigned int)  (cpsPtr->EXIT_FLOAT_DURATION/60000UL),
                          cpsPtr->FLOAT_TO_BULK_AMPS,
                          cpsPtr->FLOAT_TO_BULK_AHS,
-        (int)            cpsPtr->FLOAT_TO_BULK_VOLTS,
-        frac2int        (cpsPtr->FLOAT_TO_BULK_VOLTS, 100),
+			 floatString(cpsPtr->FLOAT_TO_BULK_VOLTS, 2),
         
         (unsigned int)   (cpsPtr->EXIT_PF_DURATION/60000UL),                                                //  Show in Minutes, as opposed to mS,
-        (int)             cpsPtr->PF_TO_BULK_VOLTS,
-        frac2int         (cpsPtr->PF_TO_BULK_VOLTS, 100),
+        floatString(cpsPtr->PF_TO_BULK_VOLTS, 2),
                           cpsPtr->PF_TO_BULK_AHS,
 
-        (int)             cpsPtr->EQUAL_BAT_V_SETPOINT,
-        frac2int         (cpsPtr->EQUAL_BAT_V_SETPOINT, 100),
+			  floatString(cpsPtr->EQUAL_BAT_V_SETPOINT, 2),
                           cpsPtr->LIMIT_EQUAL_AMPS,
         (unsigned int)   (cpsPtr->EXIT_EQUAL_DURATION/60000UL),                                             //  Show in Minutes, as opposed to mS,
                           cpsPtr->EXIT_EQUAL_AMPS ,
 
-        (int)             cpsPtr->BAT_TEMP_1C_COMP,
-        frac2int         (cpsPtr->BAT_TEMP_1C_COMP,1000),
+        floatString(cpsPtr->BAT_TEMP_1C_COMP, 3),
                           cpsPtr->MIN_TEMP_COMP_LIMIT,
                           cpsPtr->BAT_MIN_CHARGE_TEMP,
                           cpsPtr->BAT_MAX_CHARGE_TEMP);
@@ -805,32 +792,26 @@ void prep_CPE(char *buffer, CPS  *cpsPtr, int index) {
 
 
 void prep_SCV(char *buffer) {                                                                               // Prep the System Control Variables.  Pass in working buffer of OUTBOUND_BUFF_SIZE
-        snprintf_P(buffer, OUTBOUND_BUFF_SIZE, PSTR("SCV;,%1u,,%1u,%d.%02d,%d.%02d,%1u, ,%d,%d.%02d,%d.%02d,%d.%02d,%d, ,%d,%d, ,%d,%d.%02d,%d, ,%d,%d\r\n"),
+        snprintf_P(buffer, OUTBOUND_BUFF_SIZE, PSTR("SCV;,%1u,,%1u,%s,%s,%1u, ,%d,%s,%s,%s,%d, ,%d,%d, ,%d,%s,%d, ,%d,%d\r\n"),
                   systemConfig.CONFIG_LOCKOUT,
                   // REDACTED --> systemConfig.FAVOR_32V_redact,
                   systemConfig.REVERSED_SHUNT,
-        (int)     systemConfig.SV_OVERRIDE,
-        frac2int (systemConfig.SV_OVERRIDE, 100),
-        (int)     systemConfig.BC_MULT_OVERRIDE,
-        frac2int (systemConfig.BC_MULT_OVERRIDE, 100),
+		  floatString(systemConfig.SV_OVERRIDE, 2),
+		  floatString(systemConfig.BC_MULT_OVERRIDE, 2),
                   systemConfig.CP_INDEX_OVERRIDE,
 
 
                   systemConfig.ALT_TEMP_SETPOINT,
-        (int)     systemConfig.ALT_AMP_DERATE_NORMAL,
-        frac2int (systemConfig.ALT_AMP_DERATE_NORMAL, 100),
-        (int)     systemConfig.ALT_AMP_DERATE_SMALL_MODE,
-        frac2int (systemConfig.ALT_AMP_DERATE_SMALL_MODE, 100),
-        (int)     systemConfig.ALT_AMP_DERATE_HALF_POWER,
-        frac2int (systemConfig.ALT_AMP_DERATE_HALF_POWER, 100),
+		  floatString(systemConfig.ALT_AMP_DERATE_NORMAL, 2),
+		  floatString(systemConfig.ALT_AMP_DERATE_SMALL_MODE, 2),
+		  floatString(systemConfig.ALT_AMP_DERATE_HALF_POWER, 2),
                   systemConfig.ALT_PULLBACK_FACTOR,
 
                   systemConfig.ALT_AMPS_LIMIT,
                   systemConfig.ALT_WATTS_LIMIT,
 
                   systemConfig.ALTERNATOR_POLES,
-        (int)     systemConfig.ENGINE_ALT_DRIVE_RATIO,
-        frac2int (systemConfig.ENGINE_ALT_DRIVE_RATIO , 1000),
+		  floatString(systemConfig.ENGINE_ALT_DRIVE_RATIO, 3),
                   systemConfig.AMP_SHUNT_RATIO,
                   
                   systemConfig.ALT_IDLE_RPM,
@@ -855,18 +836,15 @@ void prep_NPC(char *buffer) {                                                   
 
 
 void prep_SST(char *buffer) { 
-        snprintf_P(buffer,OUTBOUND_BUFF_SIZE-3, PSTR("SST;,%s, ,%1u,%1u, ,%d,%d.%02d,%d.%02d, ,%d,%d, ,%d,%d, ,%1u\r\n"), //  System Status 
+        snprintf_P(buffer,OUTBOUND_BUFF_SIZE-3, PSTR("SST;,%s, ,%1u,%1u, ,%d,%s,%s, ,%d,%d, ,%d,%d, ,%1u\r\n"), //  System Status 
                 firmwareVersion,
 
                 smallAltMode,
                 tachMode,
 
                 (int)   (cpIndex + 1),
-                (int)    systemAmpMult,
-                frac2int(systemAmpMult,100),
-
-                (int)    systemVoltMult,
-                frac2int(systemVoltMult,100),
+		floatString(systemAmpMult, 2),
+		floatString(systemVoltMult, 2),
 
                 altCapAmps,                                             
                 altCapRPMs,
@@ -908,22 +886,6 @@ void prep_CST(char *buffer) {
 
 
 
-//----  Helper fucntion for Send_outbound();
-int frac2int (float frac, int limit) {                                                  // Returned rounded fractional portion to 'limit' digits
-    float f;
-    int   i;
-    
-    f = abs(frac) * limit;                                                              // Remove any sign, and scale it up.
-//  f = f + 0.5;                                                                        // Round it -- w/o the ability to report out a carry, this caused 13.997v to show as 13.00 after rounding!
-    i = (int) f % limit;                                                                // Trim off the digits above the '.' point (those above the scaling factor), 
-                                                                                        // and make what's left an Int.
-    return (i);
-    }
-
-    
-    
-    
-
 void  append_string(char *dest, const char *src, int n) {
     int i; 
     int offset;
@@ -938,16 +900,4 @@ void  append_string(char *dest, const char *src, int n) {
         
     *(dest + i + offset) = '\0';                                                  // NULL terminator goes at the end.
   }
-
-
-
-
-
-
-
-
-
-
-
-
 

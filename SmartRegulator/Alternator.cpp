@@ -23,6 +23,7 @@
 #include "Config.h"
 #include "Alternator.h"
 #include "AltReg_Serial.h"
+#include "Types.h"
 #include "Sensors.h"
 
 
@@ -1316,9 +1317,9 @@ void manage_ALT()  {
      if ((sendDebugString == true) && (--SDMCounter  <= 0)) {
 
 #ifdef SYSTEMCAN
-             snprintf_P(charBuffer,OUTBOUND_BUFF_SIZE, PSTR("DBG;,%d.%03d, ,%d,%d, ,%d, ,%d,%d,%d,%d,%d, ,%d,%d, %c,%d.%03d,%d.%01d, ,%d,%d,%d,  ,%d,%d,%d,%d.%03d\r\n"),
+       snprintf_P(charBuffer,OUTBOUND_BUFF_SIZE, PSTR("DBG;,%d.%03d, ,%d,%d, ,%d, ,%d,%d,%d,%d,%d, ,%d,%d, %c,%s,%s, ,%d,%d,%d,  ,%d,%d,%d,%s\r\n"),
 #else
-             snprintf_P(charBuffer,OUTBOUND_BUFF_SIZE, PSTR("DBG;,%d.%03d, ,%d,%d, ,%d, ,%d,%d,%d,%d,%d, ,%d,%d, %c,%d.%03d,%d.%01d, ,%d,%d,%d\r\n"),
+       snprintf_P(charBuffer,OUTBOUND_BUFF_SIZE, PSTR("DBG;,%d.%03d, ,%d,%d, ,%d, ,%d,%d,%d,%d,%d, ,%d,%d, %c,%s,%s, ,%d,%d,%d\r\n"),
 #endif
              (int) (enteredMills / 1000UL),                                                             // Timestamp - Seconds
              (int) (enteredMills % 1000),                                                               // time-stamp - 1000th of seconds
@@ -1342,24 +1343,16 @@ void manage_ALT()  {
 
                   //    --- Pick one  ----
   /*                 'A',
-                  (int)    measuredAltVolts,                                                            // Alternator Voltage to 1/1000th of a volt
-                  frac2int(measuredAltVolts, 1000),
-                  (int)    measuredAltAmps,                                                             // Alternator Amps to 1/10th of an amp
-                  frac2int(measuredAltAmps, 10),
-*/
- /*                 'B',
-                  (int)    measuredBatVolts,                                                            // Battery Voltage to 1/1000th of a volt
-                  frac2int(measuredBatVolts, 1000),
-                  (int)    measuredBatAmps,                                                             // Battery Amps to 1/10th of an amp
-                  frac2int(measuredBatAmps, 10),
-*/
-                 'P',
-                  (int)    persistentBatVolts,                                                          // Persistent Voltage to 1/1000th of a volt
-                  frac2int(persistentBatVolts, 1000),
-                  (int)    persistentBatAmps,                                                           // Persistent Amps to 1/10th of an amp
-                  frac2int(persistentBatAmps, 10),
-
-
+                  floatString(measuredAltVolts, 3),
+                  floatString(measuredAltAmps, 1),
+  */
+   /*                 'B',
+                  floatString(measuredBatVolts, 3),
+                  floatString(measuredBatAmps, 1),
+  */
+                   'P',
+                  floatString(persistentBatVolts, 3),
+                  floatString(persistentBatAmps, 1),
 
                   usingEXTAmps,
                   thresholdPWMvalue,
@@ -1369,8 +1362,7 @@ void manage_ALT()  {
                   , fetch_CAN_localID(),
                   CAN_RBM_sourceID,
                   ALT_Per_Util(),
-                  (int)    CAN_RBM_voltsOffset,                                                             // Remote Battery Voltage adjustment value to 1/1000th of a volt
-                  frac2int(CAN_RBM_voltsOffset, 1000)
+                  floatString(CAN_RBM_voltsOffset, 3)
 #endif
 
                    );

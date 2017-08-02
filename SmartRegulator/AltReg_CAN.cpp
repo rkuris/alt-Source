@@ -26,6 +26,7 @@
 #include "AltReg_CAN.h"
 #include <NMEA2000_CAN.h>                                   // https://github.com/ttlappalainen
 #include "Alternator.h"
+#include "Types.h"
 #include "Sensors.h"
 #include "Flash.h"
 
